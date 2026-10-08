@@ -338,25 +338,29 @@ function defineVideoController() {
     }
 
     var shadow = wrapper.attachShadow({ mode: "open" });
-    var shadowTemplate = `
-        <style>
-          @import "${chrome.runtime.getURL("shadow.css")}";
-        </style>
-
-        <div id="controller" style="top:${top}; left:${left}; opacity:${
-      tc.settings.controllerOpacity
-    }">
-          <span data-action="drag" class="draggable">${speed}</span>
-          <span id="controls">
-            <button data-action="rewind" class="rw" aria-label="${extensionMessage("ariaRewind")}">↶</button>
-            <button data-action="slower" class="speedButton" aria-label="${extensionMessage("ariaSlower")}">−</button>
-            <button data-action="reset" class="resetSpeed" aria-label="${extensionMessage("ariaReset")}">↻</button>
-            <button data-action="faster" class="speedButton" aria-label="${extensionMessage("ariaFaster")}">＋</button>
-            <button data-action="advance" class="rw" aria-label="${extensionMessage("ariaAdvance")}">↷</button>
-          </span>
-        </div>
-      `;
-    shadow.innerHTML = shadowTemplate;
+    var style = document.createElement("style");
+    style.textContent = '@import url("' + chrome.runtime.getURL("shadow.css") + '");';
+    var controller = document.createElement("div");
+    controller.id = "controller";
+    controller.style.top = top;
+    controller.style.left = left;
+    controller.style.opacity = tc.settings.controllerOpacity;
+    var draggable = document.createElement("span");
+    draggable.dataset.action = "drag";
+    draggable.className = "draggable";
+    draggable.textContent = speed;
+    var controls = document.createElement("span");
+    controls.id = "controls";
+    [["rewind", "rw", "ariaRewind", "↶"], ["slower", "speedButton", "ariaSlower", "−"], ["reset", "resetSpeed", "ariaReset", "↻"], ["faster", "speedButton", "ariaFaster", "＋"], ["advance", "rw", "ariaAdvance", "↷"]].forEach(function (item) {
+      var button = document.createElement("button");
+      button.dataset.action = item[0];
+      button.className = item[1];
+      button.setAttribute("aria-label", extensionMessage(item[2]));
+      button.textContent = item[3];
+      controls.appendChild(button);
+    });
+    controller.append(draggable, controls);
+    shadow.append(style, controller);
     shadow.querySelector(".draggable").addEventListener(
       "mousedown",
       (e) => {

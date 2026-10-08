@@ -6,7 +6,7 @@
     "message": "Playback Control"
   },
   "extensionDescription": {
-    "message": "Control web media speed and position, and find downloadable media resources"
+    "message": "Control web media speed and position, and find media resources"
   },
   "browserActionTitle": {
     "message": "Playback Control\n0 media resources found on this page"
@@ -165,7 +165,8 @@
     "message": "Disabled"
   },
   "currentSiteStatus": {
-    "message": "Current website: $1"
+    "message": "Current website: $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "captureStopped": {
     "message": "Media finder stopped"
@@ -186,10 +187,12 @@
     "message": "No response from the background process"
   },
   "captureSummary": {
-    "message": "Found $1 media resources on this page"
+    "message": "Found $1 media resources on this page",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "captureSummaryFiltered": {
-    "message": "Found $1 media resources; showing $2"
+    "message": "Found $1 media resources; showing $2",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" } }
   },
   "noMediaFound": {
     "message": "No media resources found on this page"
@@ -228,7 +231,8 @@
     "message": "Enter a valid shortcut value"
   },
   "saveFailed": {
-    "message": "Save failed: $1"
+    "message": "Save failed: $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "reloadingPage": {
     "message": "Reloading the current page…"
@@ -255,13 +259,15 @@
     "message": "Size"
   },
   "sortTitle": {
-    "message": "Currently sorted by $1"
+    "message": "Currently sorted by $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "creatingFullDownload": {
     "message": "Creating full-video download…"
   },
   "downloadFailed": {
-    "message": "Download failed: $1"
+    "message": "Download failed: $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "readingPlaylist": {
     "message": "Reading media playlist…"
@@ -273,7 +279,8 @@
     "message": "Loading media file…"
   },
   "qualityReadFailed": {
-    "message": "Could not read qualities: $1"
+    "message": "Could not read qualities: $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "noDownloadOptions": {
     "message": "No download options are available"
@@ -297,7 +304,8 @@
     "message": "Finder rules saved"
   },
   "restoreFailed": {
-    "message": "Restore failed: $1"
+    "message": "Restore failed: $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "captureRulesReset": {
     "message": "Default finder rules restored"
@@ -309,10 +317,12 @@
     "message": "M3U8 download failed"
   },
   "browserTitleOther": {
-    "message": "Playback Control\nFound $1 media resources on other pages"
+    "message": "Playback Control\nFound $1 media resources on other pages",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "browserTitleCurrent": {
-    "message": "Playback Control\nFound $1 media resources on this page"
+    "message": "Playback Control\nFound $1 media resources on this page",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "ariaRewind": {
     "message": "Rewind"
@@ -363,7 +373,8 @@
     "message": "The lightweight downloader only supports completed VOD playlists, not live streams"
   },
   "unsupportedEncryption": {
-    "message": "The playlist uses $1 encryption, which is not supported by the lightweight downloader"
+    "message": "The playlist uses $1 encryption, which is not supported by the lightweight downloader",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "unknown": {
     "message": "unknown"
@@ -384,7 +395,8 @@
     "message": "The playlist has more than 10,000 segments; downloading was stopped to limit memory use"
   },
   "httpFailed": {
-    "message": "Request failed (HTTP $1)"
+    "message": "Request failed (HTTP $1)",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "rangeFailed": {
     "message": "The server did not return the requested media byte range"
@@ -405,7 +417,8 @@
     "message": "No quality with embedded audio is available"
   },
   "downloadAndMux": {
-    "message": "Downloading and muxing $1$2/$3"
+    "message": "Downloading and muxing $1$2/$3",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
   },
   "muxLoadFailed": {
     "message": "The MP4 transmuxing component failed to load"
@@ -414,7 +427,8 @@
     "message": "The lightweight component cannot mux this segment encoding to MP4"
   },
   "approximately": {
-    "message": "Approx. $1"
+    "message": "Approx. $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "audioOnly": {
     "message": "Audio only"
@@ -441,7 +455,8 @@
     "message": "Could not read the MP4 tracks to merge"
   },
   "createTrackFailed": {
-    "message": "MP4Box could not create the $1 track"
+    "message": "MP4Box could not create the $1 track",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "audio": {
     "message": "audio"
@@ -462,7 +477,8 @@
     "message": "The browser could not create the download"
   },
   "downloadingLabel": {
-    "message": "Downloading and muxing $1$2/$3"
+    "message": "Downloading and muxing $1$2/$3",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
   },
   "videoLabel": {
     "message": "video"

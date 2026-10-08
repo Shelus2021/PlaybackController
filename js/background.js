@@ -286,11 +286,11 @@ function refreshIcon(tabId) {
 //设置扩展图标
 function SetIcon(obj) {
     if (obj.tips != undefined) {
-        chrome.action.setTitle({ title: obj.tips ? extensionMessage("browserTitleOther", obj.number || 0) : extensionMessage("browserTitleCurrent", 0) });
+        chrome.browserAction.setTitle({ title: obj.tips ? extensionMessage("browserTitleOther", obj.number || 0) : extensionMessage("browserTitleCurrent", 0) });
     } else if (obj.number == 0 || obj.number == undefined) {
-        chrome.action.setTitle({ title: extensionMessage("browserTitleCurrent", 0), tabId: obj.tabId }, function () { if (chrome.runtime.lastError) { return; } });
+        chrome.browserAction.setTitle({ title: extensionMessage("browserTitleCurrent", 0), tabId: obj.tabId }, function () { if (chrome.runtime.lastError) { return; } });
     } else {
-        chrome.action.setTitle({ title: extensionMessage("browserTitleCurrent", obj.number), tabId: obj.tabId }, function () { if (chrome.runtime.lastError) { return; } });
+        chrome.browserAction.setTitle({ title: extensionMessage("browserTitleCurrent", obj.number), tabId: obj.tabId }, function () { if (chrome.runtime.lastError) { return; } });
     }
 }
 

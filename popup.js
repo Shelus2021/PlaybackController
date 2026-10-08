@@ -362,7 +362,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const root = $("#shortcutRows"); const fragment = document.createDocumentFragment(); root.textContent = "";
     settings.keyBindings.forEach((item, index) => {
       const row = document.createElement("div"); row.className = "shortcut-row"; row.dataset.index = index;
-      row.innerHTML = `<select class="action">${Object.entries(ACTIONS).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select><input class="key" type="text" placeholder="${t("keyPlaceholder")}"><input class="value" type="number" step="0.01"><label class="force-label"><input class="force" type="checkbox"> ${t("exclusive")}</label><button class="remove" title="${t("delete")}">×</button>`;
+      const action = document.createElement("select"); action.className = "action";
+      Object.entries(ACTIONS).forEach(([value, label]) => { const option = document.createElement("option"); option.value = value; option.textContent = label; action.appendChild(option); });
+      const keyInput = document.createElement("input"); keyInput.className = "key"; keyInput.type = "text"; keyInput.placeholder = t("keyPlaceholder");
+      const value = document.createElement("input"); value.className = "value"; value.type = "number"; value.step = "0.01";
+      const forceLabel = document.createElement("label"); forceLabel.className = "force-label";
+      const force = document.createElement("input"); force.className = "force"; force.type = "checkbox"; forceLabel.append(force, document.createTextNode(" " + t("exclusive")));
+      const remove = document.createElement("button"); remove.className = "remove"; remove.type = "button"; remove.title = t("delete"); remove.textContent = "×";
+      row.append(action, keyInput, value, forceLabel, remove);
       $(".action", row).value = item.action; const key = $(".key", row); key.dataset.code = Number.isInteger(item.key) && item.key > 0 ? item.key : ""; key.value = keyName(item.key);
       $(".value", row).value = item.value ?? ""; $(".force", row).checked = item.force === true || item.force === "true"; updateValueState(row); fragment.appendChild(row);
     });

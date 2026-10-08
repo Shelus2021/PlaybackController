@@ -6,7 +6,7 @@
     "message": "播放控制"
   },
   "extensionDescription": {
-    "message": "控制网页媒体播放速度、进度并检索可下载的媒体资源"
+    "message": "控制网页媒体播放速度、进度并检索媒体资源"
   },
   "browserActionTitle": {
     "message": "播放控制\n当前页面已检索到 0 个媒体资源"
@@ -165,7 +165,8 @@
     "message": "已禁用"
   },
   "currentSiteStatus": {
-    "message": "当前网站：$1"
+    "message": "当前网站：$1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "captureStopped": {
     "message": "媒体检索已停止"
@@ -186,10 +187,12 @@
     "message": "后台没有响应"
   },
   "captureSummary": {
-    "message": "当前页面已检索到 $1 个媒体资源"
+    "message": "当前页面已检索到 $1 个媒体资源",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "captureSummaryFiltered": {
-    "message": "当前页面已检索到 $1 个媒体资源，显示 $2 个"
+    "message": "当前页面已检索到 $1 个媒体资源，显示 $2 个",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" } }
   },
   "noMediaFound": {
     "message": "当前页面暂未检索到媒体资源"
@@ -228,7 +231,8 @@
     "message": "请填写有效的快捷键数值"
   },
   "saveFailed": {
-    "message": "保存失败：$1"
+    "message": "保存失败：$1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "reloadingPage": {
     "message": "正在重新加载当前页面…"
@@ -255,13 +259,15 @@
     "message": "大小"
   },
   "sortTitle": {
-    "message": "当前按$1顺序排列"
+    "message": "当前按$1顺序排列",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "creatingFullDownload": {
     "message": "正在创建完整视频下载任务…"
   },
   "downloadFailed": {
-    "message": "下载失败：$1"
+    "message": "下载失败：$1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "readingPlaylist": {
     "message": "正在读取媒体清单…"
@@ -273,7 +279,8 @@
     "message": "正在加载媒体文件…"
   },
   "qualityReadFailed": {
-    "message": "无法读取画质：$1"
+    "message": "无法读取画质：$1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "noDownloadOptions": {
     "message": "没有可用的下载方案"
@@ -297,7 +304,8 @@
     "message": "检索规则已保存"
   },
   "restoreFailed": {
-    "message": "恢复失败：$1"
+    "message": "恢复失败：$1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "captureRulesReset": {
     "message": "检索规则已恢复默认"
@@ -309,10 +317,12 @@
     "message": "M3U8 下载失败"
   },
   "browserTitleOther": {
-    "message": "播放控制\n其他页面已检索到 $1 个媒体资源"
+    "message": "播放控制\n其他页面已检索到 $1 个媒体资源",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "browserTitleCurrent": {
-    "message": "播放控制\n当前页面已检索到 $1 个媒体资源"
+    "message": "播放控制\n当前页面已检索到 $1 个媒体资源",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "ariaRewind": {
     "message": "后退"
@@ -363,7 +373,8 @@
     "message": "轻量下载仅支持已经结束的点播清单，暂不支持直播流"
   },
   "unsupportedEncryption": {
-    "message": "该清单使用 $1 加密，轻量下载不支持"
+    "message": "该清单使用 $1 加密，轻量下载不支持",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "unknown": {
     "message": "未知"
@@ -384,7 +395,8 @@
     "message": "分片数量超过 10000，轻量下载为避免占用过多内存已停止"
   },
   "httpFailed": {
-    "message": "请求失败（HTTP $1）"
+    "message": "请求失败（HTTP $1）",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "rangeFailed": {
     "message": "服务器未正确返回指定的媒体字节范围"
@@ -405,7 +417,8 @@
     "message": "没有可用的内嵌音轨画质"
   },
   "downloadAndMux": {
-    "message": "正在下载并封装$1$2/$3"
+    "message": "正在下载并封装$1$2/$3",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
   },
   "muxLoadFailed": {
     "message": "MP4 转封装组件未能加载"
@@ -414,7 +427,8 @@
     "message": "分片编码无法由轻量组件封装为 MP4"
   },
   "approximately": {
-    "message": "约 $1"
+    "message": "约 $1",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "audioOnly": {
     "message": "仅音频"
@@ -441,7 +455,8 @@
     "message": "无法读取待合并的 MP4 轨道"
   },
   "createTrackFailed": {
-    "message": "MP4Box 无法创建$1轨道"
+    "message": "MP4Box 无法创建$1轨道",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "audio": {
     "message": "音频"
@@ -462,7 +477,8 @@
     "message": "浏览器未能创建下载任务"
   },
   "downloadingLabel": {
-    "message": "正在下载并封装$1$2/$3"
+    "message": "正在下载并封装$1$2/$3",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
   },
   "videoLabel": {
     "message": "视频"
