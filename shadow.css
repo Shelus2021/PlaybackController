@@ -1,0 +1,151 @@
+* {
+  line-height: 1.4em;
+  font-family: sans-serif;
+  font-size: 12px;
+  caret-color: transparent;
+  user-select: none;
+}
+
+:host(:hover) #controls {
+  display: inline-flex;
+}
+
+#controller {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: max-content;
+  box-sizing: border-box;
+  white-space: nowrap;
+
+  background: black;
+  color: white;
+
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 10px 10px 10px 6px;
+
+  cursor: default;
+  z-index: 9999999;
+}
+
+#controller:hover {
+  opacity: 0.7;
+}
+
+#controller:hover > .draggable {
+  margin-right: 6px;
+}
+
+#controls {
+  display: none;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 18px;
+  line-height: 18px;
+}
+
+#controller.controls-below:hover > .draggable,
+#controller.controls-below.dragging > .draggable {
+  margin-right: 0;
+}
+
+#controller.controls-below:hover,
+#controller.controls-below.dragging {
+  border-radius: 4px 4px 0 0;
+}
+
+#controller.controls-below #controls {
+  position: absolute;
+  top: calc(100% - 1px);
+  right: 0;
+  flex-direction: column;
+  width: 100%;
+  height: auto;
+  box-sizing: border-box;
+  padding: 3px 0 2px;
+  border-radius: 0 0 4px 4px;
+  background: black;
+}
+
+#controller.controls-below #controls button {
+  width: 100%;
+  flex: 0 0 18px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+#controller.dragging {
+  cursor: -webkit-grabbing;
+  cursor: -moz-grabbing;
+  opacity: 0.7;
+}
+
+#controller.dragging #controls {
+  display: inline-flex;
+}
+
+.draggable {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  line-height: 18px;
+  cursor: -webkit-grab;
+  cursor: -moz-grab;
+}
+
+.draggable:active {
+  cursor: -webkit-grabbing;
+  cursor: -moz-grabbing;
+}
+
+button {
+  cursor: pointer;
+  color: white;
+  background: transparent;
+  font-weight: bold;
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 18px;
+  border: 0;
+  font-family: "Lucida Console", Monaco, monospace;
+  margin: 0;
+}
+
+button:focus {
+  outline: 0;
+}
+
+button:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+button:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+button.rw {
+  opacity: 0.85;
+  font-size: 17px;
+}
+
+button.speedButton {
+  width: 20px;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+  font-family: sans-serif;
+}
+
+button.resetSpeed {
+  width: 20px;
+  padding-left: 0;
+  padding-right: 0;
+  font-family: sans-serif;
+  font-size: 17px;
+}

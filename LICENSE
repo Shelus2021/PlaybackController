@@ -1,0 +1,43 @@
+播放控制（Playback Control）项目权利声明
+Project-Specific Rights Notice
+
+Copyright (c) 2026 Shelus2021 (GitHub: https://github.com/Shelus2021)
+All rights reserved.
+
+中文
+----
+
+一、项目独立内容
+
+除下述第三方内容外，本仓库中由 Shelus2021 独立创作的代码、文档、界面设计及其他内容（包括对第三方项目所作且具备独立著作权的新增与修改部分）均保留全部权利。
+
+除适用法律另有强制规定外，未经相应著作权人事先书面许可，不授予任何人复制、修改、发布、分发、再许可、销售本项目独立内容或基于其制作衍生作品的权利。
+
+二、第三方内容
+
+本仓库包含或修改了采用 MIT License、Apache License 2.0、BSD 3-Clause License 等许可证发布的第三方内容。第三方内容及其衍生部分仍分别受其适用许可证与版权声明约束，具体来源、覆盖范围和许可文本见 `THIRD_PARTY_NOTICES.md` 及 `licenses/` 目录。
+
+本声明不限制、撤销或取代第三方许可证已经授予的任何权利。分发本仓库或其构建产物时，必须保留并遵守适用的第三方版权声明、许可文本及通知。
+
+三、免责声明
+
+在适用法律允许的最大范围内，本项目独立内容按“现状”提供，不附带任何明示或默示保证。著作权人不对因使用本项目而产生的任何损失或责任承担责任。
+
+English
+-------
+
+1. Project-specific material
+
+Except for the third-party material described below, Shelus2021 reserves all rights in independently created code, documentation, interface designs, and other material, including copyrightable additions and modifications made to third-party projects.
+
+Except where applicable law requires otherwise, no permission is granted to reproduce, modify, publish, distribute, sublicense, sell, or create derivative works from the project-specific material without prior written permission from the relevant copyright holder(s).
+
+2. Third-party material
+
+This repository includes or modifies third-party material distributed under licenses including the MIT License, Apache License 2.0, and BSD 3-Clause License. That material and applicable derivative portions remain governed by their respective licenses and copyright notices. See `THIRD_PARTY_NOTICES.md` and the `licenses/` directory for sources, scope, and license texts.
+
+Nothing in this notice limits, revokes, or replaces rights already granted under an applicable third-party license. Any distribution of this repository or its build artifacts must preserve and comply with the applicable third-party copyright notices, license texts, and notices.
+
+3. Disclaimer
+
+To the maximum extent permitted by applicable law, the project-specific material is provided "AS IS", without warranties of any kind, express or implied. The copyright holder(s) shall not be liable for any loss or liability arising from use of the project.

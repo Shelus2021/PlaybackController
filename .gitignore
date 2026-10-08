@@ -1,0 +1,9 @@
+*.xpi
+*.zip
+*.log
+*.bak
+*~
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

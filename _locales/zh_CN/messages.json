@@ -1,0 +1,512 @@
+{
+  "extensionName": {
+    "message": "播放控制"
+  },
+  "extensionShortName": {
+    "message": "播放控制"
+  },
+  "extensionDescription": {
+    "message": "控制网页媒体播放速度、进度并检索可下载的媒体资源"
+  },
+  "browserActionTitle": {
+    "message": "播放控制\n当前页面已检索到 0 个媒体资源"
+  },
+  "loadingSettings": {
+    "message": "正在读取设置…"
+  },
+  "toggleCurrentSite": {
+    "message": "启用或禁用当前网站"
+  },
+  "shortcutsTitle": {
+    "message": "快捷键"
+  },
+  "shortcutsSubtitle": {
+    "message": "播放速度、前进和后退"
+  },
+  "playbackSettingsTitle": {
+    "message": "播放设置"
+  },
+  "playbackSettingsSubtitle": {
+    "message": "记忆速度、强制调速和显示"
+  },
+  "mediaCaptureTitle": {
+    "message": "媒体检索"
+  },
+  "mediaCaptureSubtitle": {
+    "message": "筛选并预览当前页面的媒体资源"
+  },
+  "captureRulesTitle": {
+    "message": "检索规则"
+  },
+  "captureRulesSubtitle": {
+    "message": "设置需要检索的文件后缀和媒体类型"
+  },
+  "supportTitle": {
+    "message": "支持一下"
+  },
+  "back": {
+    "message": "返回"
+  },
+  "shortcutHint": {
+    "message": "点击按键框后按下键盘按键。留空表示禁用该动作。"
+  },
+  "addShortcut": {
+    "message": "＋ 增加快捷键"
+  },
+  "saveShortcuts": {
+    "message": "保存快捷键"
+  },
+  "resetShortcuts": {
+    "message": "恢复默认快捷键"
+  },
+  "startHidden": {
+    "message": "默认隐藏控制器"
+  },
+  "rememberSpeed": {
+    "message": "记住每个视频的播放速度"
+  },
+  "forceLastSavedSpeed": {
+    "message": "强制保持上次保存的速度"
+  },
+  "forceLastSavedSpeedHint": {
+    "message": "网页覆盖速度时仍尝试恢复"
+  },
+  "applyToAudio": {
+    "message": "对音频生效"
+  },
+  "controllerOpacity": {
+    "message": "控制器不透明度"
+  },
+  "savePlaybackSettings": {
+    "message": "保存播放设置"
+  },
+  "resetPlaybackSettings": {
+    "message": "恢复默认播放设置"
+  },
+  "loadingCaptureData": {
+    "message": "正在读取检索数据…"
+  },
+  "filterMedia": {
+    "message": "筛选名称、类型或网址"
+  },
+  "sortDefault": {
+    "message": "默认"
+  },
+  "sortDefaultTitle": {
+    "message": "当前按默认顺序排列"
+  },
+  "extensionRules": {
+    "message": "检索后缀"
+  },
+  "extensionRulesHint": {
+    "message": "取消勾选会明确排除；删除后将继续按类型判断"
+  },
+  "enabled": {
+    "message": "启用"
+  },
+  "extension": {
+    "message": "后缀"
+  },
+  "minimumKb": {
+    "message": "最小 KB"
+  },
+  "addExtension": {
+    "message": "＋ 添加后缀"
+  },
+  "typeRules": {
+    "message": "检索类型"
+  },
+  "typeRulesHint": {
+    "message": "后缀未配置时用于补充判断，例如 video/*"
+  },
+  "type": {
+    "message": "类型"
+  },
+  "addType": {
+    "message": "＋ 添加类型"
+  },
+  "saveCaptureRules": {
+    "message": "保存检索规则"
+  },
+  "resetCaptureRules": {
+    "message": "恢复默认检索规则"
+  },
+  "supportSubtitle": {
+    "message": "本扩展仅用于学习交流，如果你觉得有所收获，可以请我喝瓶水~"
+  },
+  "donationCodeAlt": {
+    "message": "收款码"
+  },
+  "actionDisplay": {
+    "message": "显示/隐藏控制器"
+  },
+  "actionSlower": {
+    "message": "降低播放速度"
+  },
+  "actionFaster": {
+    "message": "提高播放速度"
+  },
+  "actionRewind": {
+    "message": "后退"
+  },
+  "actionAdvance": {
+    "message": "前进"
+  },
+  "actionReset": {
+    "message": "恢复播放速度"
+  },
+  "actionFast": {
+    "message": "自定义播放速度"
+  },
+  "statusEnabled": {
+    "message": "已启用"
+  },
+  "statusDisabled": {
+    "message": "已禁用"
+  },
+  "currentSiteStatus": {
+    "message": "当前网站：$1"
+  },
+  "captureStopped": {
+    "message": "媒体检索已停止"
+  },
+  "unknownSize": {
+    "message": "未知大小"
+  },
+  "unknownFormat": {
+    "message": "未知格式"
+  },
+  "downloadFile": {
+    "message": "下载该文件"
+  },
+  "downloadQuality": {
+    "message": "下载该画质"
+  },
+  "noBackgroundResponse": {
+    "message": "后台没有响应"
+  },
+  "captureSummary": {
+    "message": "当前页面已检索到 $1 个媒体资源"
+  },
+  "captureSummaryFiltered": {
+    "message": "当前页面已检索到 $1 个媒体资源，显示 $2 个"
+  },
+  "noMediaFound": {
+    "message": "当前页面暂未检索到媒体资源"
+  },
+  "noMatchingMedia": {
+    "message": "没有符合筛选条件的资源"
+  },
+  "playMediaHint": {
+    "message": "播放媒体后，检索结果会显示在这里"
+  },
+  "hlsLibraryFailed": {
+    "message": "HLS 播放库加载失败"
+  },
+  "hlsUnsupported": {
+    "message": "当前浏览器无法播放该 HLS 资源"
+  },
+  "hlsPreviewFailed": {
+    "message": "该 HLS 资源无法预览，可能受到编码、跨域或访问时效限制"
+  },
+  "delete": {
+    "message": "删除"
+  },
+  "minimumSizeError": {
+    "message": "最小大小必须是大于或等于 0 的数字"
+  },
+  "mediaTypeFormatError": {
+    "message": "检索类型应采用 video/* 这样的格式"
+  },
+  "keyPlaceholder": {
+    "message": "按键"
+  },
+  "exclusive": {
+    "message": "独占"
+  },
+  "invalidShortcut": {
+    "message": "请填写有效的快捷键数值"
+  },
+  "saveFailed": {
+    "message": "保存失败：$1"
+  },
+  "reloadingPage": {
+    "message": "正在重新加载当前页面…"
+  },
+  "playbackSaved": {
+    "message": "播放设置已保存"
+  },
+  "shortcutsSaved": {
+    "message": "快捷键已保存"
+  },
+  "shortcutsReset": {
+    "message": "快捷键已恢复默认"
+  },
+  "playbackReset": {
+    "message": "播放设置已恢复默认"
+  },
+  "opacityError": {
+    "message": "不透明度必须在 0 到 1 之间"
+  },
+  "sortName": {
+    "message": "名称"
+  },
+  "sortSize": {
+    "message": "大小"
+  },
+  "sortTitle": {
+    "message": "当前按$1顺序排列"
+  },
+  "creatingFullDownload": {
+    "message": "正在创建完整视频下载任务…"
+  },
+  "downloadFailed": {
+    "message": "下载失败：$1"
+  },
+  "readingPlaylist": {
+    "message": "正在读取媒体清单…"
+  },
+  "chooseDownload": {
+    "message": "媒体文件已加载"
+  },
+  "readingQualities": {
+    "message": "正在加载媒体文件…"
+  },
+  "qualityReadFailed": {
+    "message": "无法读取画质：$1"
+  },
+  "noDownloadOptions": {
+    "message": "没有可用的下载方案"
+  },
+  "noDownloadQuality": {
+    "message": "没有可下载的画质"
+  },
+  "creatingDownload": {
+    "message": "正在创建下载任务…"
+  },
+  "downloadWithReferer": {
+    "message": "已携带 Referer 开始下载"
+  },
+  "downloadStarted": {
+    "message": "已开始下载"
+  },
+  "notSaved": {
+    "message": "尚未保存"
+  },
+  "captureRulesSaved": {
+    "message": "检索规则已保存"
+  },
+  "restoreFailed": {
+    "message": "恢复失败：$1"
+  },
+  "captureRulesReset": {
+    "message": "检索规则已恢复默认"
+  },
+  "completeMp4Started": {
+    "message": "完整 MP4 已开始下载"
+  },
+  "m3u8DownloadFailed": {
+    "message": "M3U8 下载失败"
+  },
+  "browserTitleOther": {
+    "message": "播放控制\n其他页面已检索到 $1 个媒体资源"
+  },
+  "browserTitleCurrent": {
+    "message": "播放控制\n当前页面已检索到 $1 个媒体资源"
+  },
+  "ariaRewind": {
+    "message": "后退"
+  },
+  "ariaSlower": {
+    "message": "减小速度"
+  },
+  "ariaReset": {
+    "message": "恢复 1.0 倍速"
+  },
+  "ariaFaster": {
+    "message": "增加速度"
+  },
+  "ariaAdvance": {
+    "message": "前进"
+  },
+  "invalidM3u8": {
+    "message": "该地址不是有效的 M3U8 清单"
+  },
+  "noAudioTrack": {
+    "message": "无音轨"
+  },
+  "unknownQuality": {
+    "message": "未知画质"
+  },
+  "defaultAudioTrack": {
+    "message": "默认音轨"
+  },
+  "separateNonAac": {
+    "message": "独立非 AAC 音轨"
+  },
+  "separateAudio": {
+    "message": "含独立音轨"
+  },
+  "hasAudio": {
+    "message": "含音轨"
+  },
+  "audioPending": {
+    "message": "音轨待检测"
+  },
+  "unsupportedSeparateAudio": {
+    "message": "该画质的独立音轨不是 AAC，轻量下载暂不支持"
+  },
+  "invalidByteRange": {
+    "message": "清单中存在无效的字节范围"
+  },
+  "vodOnly": {
+    "message": "轻量下载仅支持已经结束的点播清单，暂不支持直播流"
+  },
+  "unsupportedEncryption": {
+    "message": "该清单使用 $1 加密，轻量下载不支持"
+  },
+  "unknown": {
+    "message": "未知"
+  },
+  "drmUnsupported": {
+    "message": "该清单使用 DRM 或非标准密钥格式，无法下载"
+  },
+  "missingKeyUrl": {
+    "message": "AES-128 密钥地址缺失"
+  },
+  "missingInitUrl": {
+    "message": "初始化分片地址缺失"
+  },
+  "noSegments": {
+    "message": "清单中没有可下载的完整媒体分片"
+  },
+  "tooManySegments": {
+    "message": "分片数量超过 10000，轻量下载为避免占用过多内存已停止"
+  },
+  "httpFailed": {
+    "message": "请求失败（HTTP $1）"
+  },
+  "rangeFailed": {
+    "message": "服务器未正确返回指定的媒体字节范围"
+  },
+  "invalidIv": {
+    "message": "AES-128 IV 格式无效"
+  },
+  "invalidKeyLength": {
+    "message": "AES-128 密钥长度不是 16 字节"
+  },
+  "decryptFailed": {
+    "message": "AES-128 分片解密失败"
+  },
+  "nestedPlaylist": {
+    "message": "M3U8 主清单嵌套层级过多"
+  },
+  "noMuxedQuality": {
+    "message": "没有可用的内嵌音轨画质"
+  },
+  "downloadAndMux": {
+    "message": "正在下载并封装$1$2/$3"
+  },
+  "muxLoadFailed": {
+    "message": "MP4 转封装组件未能加载"
+  },
+  "muxFailed": {
+    "message": "分片编码无法由轻量组件封装为 MP4"
+  },
+  "approximately": {
+    "message": "约 $1"
+  },
+  "audioOnly": {
+    "message": "仅音频"
+  },
+  "unknownResolution": {
+    "message": "未知分辨率"
+  },
+  "unknownAudio": {
+    "message": "音轨未知"
+  },
+  "mp4InfoFailed": {
+    "message": "MP4 信息解析失败"
+  },
+  "trackInfoFailed": {
+    "message": "无法识别该清单首个媒体分片的轨道信息"
+  },
+  "audioDetectionFailed": {
+    "message": "音轨检测失败"
+  },
+  "mp4TrackFailed": {
+    "message": "MP4 轨道解析失败"
+  },
+  "readTracksFailed": {
+    "message": "无法读取待合并的 MP4 轨道"
+  },
+  "createTrackFailed": {
+    "message": "MP4Box 无法创建$1轨道"
+  },
+  "audio": {
+    "message": "音频"
+  },
+  "video": {
+    "message": "视频"
+  },
+  "noVideoTrack": {
+    "message": "所选画质中没有可合并的视频轨"
+  },
+  "noAacTrack": {
+    "message": "独立音轨中没有可合并的 AAC 音频"
+  },
+  "readMp4TracksFailed": {
+    "message": "无法读取 MP4 中的音视频轨道"
+  },
+  "browserDownloadFailed": {
+    "message": "浏览器未能创建下载任务"
+  },
+  "downloadingLabel": {
+    "message": "正在下载并封装$1$2/$3"
+  },
+  "videoLabel": {
+    "message": "视频"
+  },
+  "audioLabel": {
+    "message": "音频"
+  },
+  "selectedNoVideo": {
+    "message": "所选画质中没有视频轨"
+  },
+  "separateNotAac": {
+    "message": "独立音轨不是可识别的 AAC 音频"
+  },
+  "mergingTracks": {
+    "message": "正在无损合并视频和音频轨道…"
+  },
+  "fixingSilentTimeline": {
+    "message": "正在校正纯视频时间轴（不包含声音）…"
+  },
+  "generatingMp4": {
+    "message": "正在校正并生成 MP4 文件…"
+  },
+  "completeWithAudio": {
+    "message": "含声音的完整 MP4 已开始下载"
+  },
+  "silentMp4Started": {
+    "message": "纯视频 MP4 已开始下载（不包含声音）"
+  },
+  "downloadCancelled": {
+    "message": "下载已取消"
+  },
+  "readM3u8Failed": {
+    "message": "无法读取 M3U8 清单"
+  },
+  "copyLink": {
+    "message": "复制"
+  },
+  "copyLinkTitle": {
+    "message": "复制文件链接"
+  },
+  "linkCopied": {
+    "message": "文件链接已复制"
+  },
+  "copyFailed": {
+    "message": "复制文件链接失败"
+  }
+}

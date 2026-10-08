@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title data-i18n="extensionName">播放控制</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script src="js/i18n.js"></script>
+    <script src="js/defaults.js"></script>
+    <script src="popup.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div><h1 data-i18n="extensionName">播放控制</h1><span id="status" class="status" data-i18n="loadingSettings">正在读取设置…</span></div>
+      <label class="switch" title="启用或禁用当前网站" data-i18n-title="toggleCurrentSite"><input id="enabled" type="checkbox" /><span class="slider"></span></label>
+    </header>
+    <main class="content">
+      <div id="mainMenu" class="menu-view">
+        <button type="button" class="menu-card" data-page="shortcutsPanel"><span class="card-icon">⌨</span><span><b data-i18n="shortcutsTitle">快捷键</b><small data-i18n="shortcutsSubtitle">播放速度、前进和后退</small></span></button>
+        <button type="button" class="menu-card" data-page="generalPanel"><span class="card-icon">⚙</span><span><b data-i18n="playbackSettingsTitle">播放设置</b><small data-i18n="playbackSettingsSubtitle">记忆速度、强制调速和显示</small></span></button>
+        <button type="button" class="menu-card" data-page="capturePanel"><span class="card-icon">⇩</span><span><b data-i18n="mediaCaptureTitle">媒体检索</b><small data-i18n="mediaCaptureSubtitle">筛选、预览并下载当前页面的媒体资源</small></span></button>
+        <button type="button" class="menu-card" data-page="captureRulesPanel"><span class="card-icon">☷</span><span><b data-i18n="captureRulesTitle">检索规则</b><small data-i18n="captureRulesSubtitle">设置需要检索的文件后缀和媒体类型</small></span></button>
+        <footer class="app-footer"><a href="https://github.com/Shelus2021/PlaybackController" target="_blank" rel="noopener">GitHub</a><span>·</span><button type="button" class="footer-link" data-page="donationPanel" data-i18n="supportTitle">支持一下</button></footer>
+      </div>
+      <section id="shortcutsPanel" class="subpage hidden">
+        <div class="subpage-header"><button type="button" class="back-button" data-back="" data-i18n="back">返回</button><span><b data-i18n="shortcutsTitle">快捷键</b><small data-i18n="shortcutsSubtitle">播放速度、前进和后退</small></span></div>
+        <p class="hint" data-i18n="shortcutHint">点击按键框后按下键盘按键。留空表示禁用该动作。</p>
+        <div id="shortcutRows"></div><button type="button" id="addShortcut" class="outline" data-i18n="addShortcut">＋ 增加快捷键</button><button type="button" id="saveShortcuts" class="primary" data-i18n="saveShortcuts">保存快捷键</button><button type="button" id="resetShortcuts" class="reset-button" data-i18n="resetShortcuts">恢复默认快捷键</button>
+      </section>
+      <section id="generalPanel" class="subpage hidden">
+        <div class="subpage-header"><button type="button" class="back-button" data-back="" data-i18n="back">返回</button><span><b data-i18n="playbackSettingsTitle">播放设置</b><small data-i18n="playbackSettingsSubtitle">记忆速度、强制调速和显示</small></span></div>
+        <label class="setting"><span data-i18n="startHidden">默认隐藏控制器</span><input id="startHidden" type="checkbox" /></label>
+        <label class="setting"><span data-i18n="rememberSpeed">记住每个视频的播放速度</span><input id="rememberSpeed" type="checkbox" /></label>
+        <label class="setting"><span><span data-i18n="forceLastSavedSpeed">强制保持上次保存的速度</span><small data-i18n="forceLastSavedSpeedHint">网页覆盖速度时仍尝试恢复</small></span><input id="forceLastSavedSpeed" type="checkbox" /></label>
+        <label class="setting"><span data-i18n="applyToAudio">对音频生效</span><input id="audioBoolean" type="checkbox" /></label>
+        <label class="field"><span><span data-i18n="controllerOpacity">控制器不透明度</span> <em>0 - 1</em></span><input id="controllerOpacity" type="number" min="0" max="1" step="0.05" /></label>
+        <button type="button" id="saveGeneral" class="primary" data-i18n="savePlaybackSettings">保存播放设置</button><button type="button" id="resetGeneral" class="reset-button" data-i18n="resetPlaybackSettings">恢复默认播放设置</button>
+      </section>
+      <section id="capturePanel" class="subpage hidden">
+        <div class="subpage-header"><button type="button" class="back-button" data-back="" data-i18n="back">返回</button><span><b data-i18n="mediaCaptureTitle">媒体检索</b><small id="captureCardSummary" data-i18n="loadingCaptureData">正在读取检索数据…</small></span></div>
+        <div class="capture-filter-row">
+          <input id="captureFilter" class="capture-filter" type="text" placeholder="筛选名称、类型或网址" data-i18n-placeholder="filterMedia" />
+          <button type="button" id="captureSort" class="capture-sort" title="当前按默认顺序排列" data-i18n="sortDefault" data-i18n-title="sortDefaultTitle">默认</button>
+        </div>
+        <div id="captureList" class="capture-list"></div>
+      </section>
+      <section id="captureRulesPanel" class="subpage hidden">
+        <div class="subpage-header"><button type="button" class="back-button" data-back="" data-i18n="back">返回</button><span><b data-i18n="captureRulesTitle">检索规则</b><small data-i18n="captureRulesSubtitle">设置需要检索的文件后缀和媒体类型</small></span></div>
+        <div class="rule-heading"><b data-i18n="extensionRules">检索后缀</b><small data-i18n="extensionRulesHint">取消勾选会明确排除；删除后将继续按类型判断</small></div>
+        <div class="rule-columns"><span data-i18n="enabled">启用</span><span data-i18n="extension">后缀</span><span data-i18n="minimumKb">最小 KB</span><span></span></div>
+        <div id="extensionRules" class="rule-list"></div>
+        <button type="button" class="outline compact" data-add-rule="Ext" data-i18n="addExtension">＋ 添加后缀</button>
+        <div class="rule-heading type-heading"><b data-i18n="typeRules">检索类型</b><small data-i18n="typeRulesHint">后缀未配置时用于补充判断，例如 video/*</small></div>
+        <div class="rule-columns"><span data-i18n="enabled">启用</span><span data-i18n="type">类型</span><span data-i18n="minimumKb">最小 KB</span><span></span></div>
+        <div id="typeRules" class="rule-list"></div>
+        <button type="button" class="outline compact" data-add-rule="Type" data-i18n="addType">＋ 添加类型</button>
+        <button type="button" id="saveCaptureRules" class="primary" data-i18n="saveCaptureRules">保存检索规则</button>
+        <button type="button" id="resetCaptureRules" class="reset-button" data-i18n="resetCaptureRules">恢复默认检索规则</button>
+      </section>
+      <section id="donationPanel" class="subpage hidden">
+        <div class="subpage-header"><button type="button" class="back-button" data-back="" data-i18n="back">返回</button><span><b data-i18n="supportTitle">支持一下</b><small data-i18n="supportSubtitle">本扩展仅用于学习交流，如果你觉得有所收获，可以请我喝瓶水~</small></span></div>
+        <img class="donation-code" src="support.jpg" alt="收款码" data-i18n-alt="donationCodeAlt" />
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,59 @@
+﻿{
+  "name": "播放控制",
+  "short_name": "播放控制",
+  "version": "0.1.4",
+  "manifest_version": 2,
+  "description": "控制网页媒体播放速度、进度并检索可下载的媒体资源",
+  "default_locale": "zh_CN",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "playback-control@Shelus2021.github",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "incognito": "spanning",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "downloads",
+    "clipboardWrite",
+    "alarms",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["js/firefox.js", "js/i18n.js", "js/defaults.js", "lib/mux.min.js", "js/init.js", "js/background.js", "js/hls-downloader.js"]
+  },
+  "browser_action": {
+    "default_title": "__MSG_browserActionTitle__",
+    "default_icon": {
+      "19": "icons/icon19.png",
+      "38": "icons/icon38.png",
+      "48": "icons/icon48.png"
+    },
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "all_frames": true,
+      "matches": ["http://*/*", "https://*/*", "file:///*"],
+      "match_about_blank": true,
+      "exclude_matches": [
+        "https://plus.google.com/hangouts/*",
+        "https://hangouts.google.com/*",
+        "https://meet.google.com/*"
+      ],
+      "css": ["inject.css"],
+      "js": ["js/i18n.js", "js/defaults.js", "inject.js"]
+    }
+  ],
+  "web_accessible_resources": ["inject.css", "shadow.css"]
+}
