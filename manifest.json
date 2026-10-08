@@ -1,9 +1,10 @@
 ﻿{
   "name": "播放控制",
   "short_name": "播放控制",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "manifest_version": 2,
   "description": "控制网页媒体播放速度、进度并检索可下载的媒体资源",
+  "homepage_url": "https://github.com/Shelus2021/PlaybackController",
   "default_locale": "zh_CN",
   "browser_specific_settings": {
     "gecko": {
