@@ -434,8 +434,8 @@
     "message": "No quality with embedded audio is available"
   },
   "downloadAndMux": {
-    "message": "Downloading and muxing $1$2/$3",
-    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+    "message": "Downloading and muxing $LABEL$$COMPLETED$/$TOTAL$",
+    "placeholders": { "label": { "content": "$1" }, "completed": { "content": "$2" }, "total": { "content": "$3" } }
   },
   "muxLoadFailed": {
     "message": "The MP4 transmuxing component failed to load"
@@ -494,8 +494,8 @@
     "message": "The browser could not create the download"
   },
   "downloadingLabel": {
-    "message": "Downloading and muxing $1$2/$3",
-    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+    "message": "Downloading and muxing $LABEL$$COMPLETED$/$TOTAL$",
+    "placeholders": { "label": { "content": "$1" }, "completed": { "content": "$2" }, "total": { "content": "$3" } }
   },
   "cancelDownload": {
     "message": "Cancel"

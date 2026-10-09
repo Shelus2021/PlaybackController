@@ -434,8 +434,8 @@
     "message": "没有可用的内嵌音轨画质"
   },
   "downloadAndMux": {
-    "message": "正在下载并封装$1$2/$3",
-    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+    "message": "正在下载并封装$LABEL$$COMPLETED$/$TOTAL$",
+    "placeholders": { "label": { "content": "$1" }, "completed": { "content": "$2" }, "total": { "content": "$3" } }
   },
   "muxLoadFailed": {
     "message": "MP4 转封装组件未能加载"
@@ -494,8 +494,8 @@
     "message": "浏览器未能创建下载任务"
   },
   "downloadingLabel": {
-    "message": "正在下载并封装$1$2/$3",
-    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+    "message": "正在下载并封装$LABEL$$COMPLETED$/$TOTAL$",
+    "placeholders": { "label": { "content": "$1" }, "completed": { "content": "$2" }, "total": { "content": "$3" } }
   },
   "cancelDownload": {
     "message": "取消"
