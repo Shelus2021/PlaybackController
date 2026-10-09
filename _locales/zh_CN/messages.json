@@ -273,8 +273,14 @@
     "message": "正在创建完整视频下载任务…"
   },
   "separateTrackMemoryWarning": {
-    "message": "该画质的视频与音频需要在内存中合并，预计文件大小为 $1，峰值内存可能达到文件大小的数倍。是否继续？",
-    "placeholders": { "arg1": { "content": "$1" } }
+    "message": "该画质的视频与音频需要在内存中合并。本文件预计为 $1，峰值内存约为 $2（按 3 倍估算）。是否继续？",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" } }
+  },
+  "memoryWarningTitle": {
+    "message": "内存占用提示"
+  },
+  "continueDownload": {
+    "message": "继续下载"
   },
   "downloadFailed": {
     "message": "下载失败：$1",
@@ -489,6 +495,32 @@
   },
   "downloadingLabel": {
     "message": "正在下载并封装$1$2/$3",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+  },
+  "cancelDownload": {
+    "message": "取消"
+  },
+  "downloadAlreadyRunning": {
+    "message": "已有媒体正在下载，请等待完成或先取消当前任务"
+  },
+  "cancellingDownload": {
+    "message": "正在取消下载…"
+  },
+  "segmentRequestTimedOut": {
+    "message": "媒体分片请求超时，请重试或选择其他画质"
+  },
+  "segmentMuxTimedOut": {
+    "message": "媒体分片封装超时，任务已停止"
+  },
+  "byteRangeUnsupported": {
+    "message": "媒体服务器忽略了分片范围请求，已停止以避免重复下载整个文件"
+  },
+  "fetchingSegmentLabel": {
+    "message": "正在获取$1分片 $2/$3…",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+  },
+  "muxingSegmentLabel": {
+    "message": "正在封装$1分片 $2/$3…",
     "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
   },
   "videoLabel": {

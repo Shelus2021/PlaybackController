@@ -1,7 +1,7 @@
 ﻿{
   "name": "__MSG_extensionName__",
   "short_name": "__MSG_extensionShortName__",
-  "version": "0.3.0",
+  "version": "0.3.11",
   "manifest_version": 2,
   "description": "__MSG_extensionDescription__",
   "homepage_url": "https://github.com/Shelus2021/PlaybackController",

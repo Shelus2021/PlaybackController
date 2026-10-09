@@ -4,7 +4,10 @@
 (() => {
     const t = extensionMessage;
     const jobs = new Map();
+    const jobStates = new Map();
     const requestReferers = new Map();
+    const popupPanels = new Set(["mainMenu", "shortcutsPanel", "generalPanel", "capturePanel", "captureRulesPanel", "donationPanel"]);
+    let popupPanel = "mainMenu";
     let nextJobId = 1;
     let mp4boxLoader;
 
@@ -197,19 +200,48 @@
         }
     }
 
+    async function withRequestTimeout(signal, task) {
+        const controller = new AbortController();
+        let interrupt;
+        const interrupted = new Promise((_, reject) => {
+            interrupt = error => {
+                controller.abort();
+                reject(error);
+            };
+        });
+        const abort = () => interrupt(new DOMException(t("downloadCancelled"), "AbortError"));
+        if (signal && signal.aborted) abort();
+        else if (signal) signal.addEventListener("abort", abort, { once: true });
+        const timer = setTimeout(() => interrupt(new Error(t("segmentRequestTimedOut"))), 120000);
+        try {
+            return await Promise.race([task(controller.signal), interrupted]);
+        } finally {
+            clearTimeout(timer);
+            if (signal) signal.removeEventListener("abort", abort);
+        }
+    }
+
     async function fetchText(url, referer, signal) {
-        const response = await fetchResponse(url, referer, signal);
-        return response.text();
+        return withRequestTimeout(signal, async requestSignal => {
+            const response = await fetchResponse(url, referer, requestSignal);
+            return response.text();
+        });
     }
 
     async function fetchBytes(url, referer, signal, range) {
-        const response = await fetchResponse(url, referer, signal, range);
-        let bytes = new Uint8Array(await response.arrayBuffer());
-        if (range && response.status !== 206 && bytes.byteLength !== range.length) {
-            bytes = bytes.slice(range.offset, range.offset + range.length);
-        }
-        if (range && bytes.byteLength !== range.length) throw new Error(t("rangeFailed"));
-        return bytes;
+        return withRequestTimeout(signal, async requestSignal => {
+            const response = await fetchResponse(url, referer, requestSignal, range);
+            const contentLength = Number(response.headers.get("content-length")) || 0;
+            if (range && response.status !== 206 && contentLength > range.length) {
+                throw new Error(t("byteRangeUnsupported"));
+            }
+            let bytes = new Uint8Array(await response.arrayBuffer());
+            if (range && response.status !== 206 && bytes.byteLength !== range.length) {
+                bytes = bytes.slice(range.offset, range.offset + range.length);
+            }
+            if (range && bytes.byteLength !== range.length) throw new Error(t("rangeFailed"));
+            return bytes;
+        });
     }
 
     function makeIv(value, sequence) {
@@ -246,15 +278,21 @@
     }
 
     function notify(job, state, completed, total, message) {
-        chrome.runtime.sendMessage({
+        const progress = {
             Message: "hlsDownloadProgress",
             jobId: job.id,
             sourceUrl: job.sourceUrl,
             state,
             completed,
             total,
-            message
-        }, () => void chrome.runtime.lastError);
+            message,
+            updatedAt: Date.now()
+        };
+        job.progress = progress;
+        jobStates.delete(job.sourceUrl);
+        jobStates.set(job.sourceUrl, progress);
+        while (jobStates.size > 100) jobStates.delete(jobStates.keys().next().value);
+        chrome.runtime.sendMessage(progress, () => void chrome.runtime.lastError);
     }
 
     async function resolveMediaPlaylist(url, referer, signal, depth = 0) {
@@ -274,6 +312,14 @@
         const total = progress.total || count;
         const label = progress.label ? progress.label + " " : "";
         notify(job, "downloading", completed, total, t("downloadingLabel", [label, completed, total]));
+    }
+
+    function reportTrackActivity(job, progress, index, count, messageKey) {
+        const current = (progress.offset || 0) + index + 1;
+        const completed = Math.max(0, current - 1);
+        const total = progress.total || count;
+        const label = progress.label ? progress.label + " " : "";
+        notify(job, "downloading", completed, total, t(messageKey, [label, current, total]));
     }
 
     function formatBytes(bytes) {
@@ -343,39 +389,83 @@
         } catch (_) {}
     }
 
+    function createTransmuxSession(signal) {
+        const worker = new Worker(chrome.runtime.getURL("js/hls-transmux-worker.js"));
+        let closed = false;
+        let nextRequestId = 1;
+        let pending = null;
+        const abortError = () => new DOMException(t("downloadCancelled"), "AbortError");
+        const finishPending = (method, value) => {
+            if (!pending) return;
+            clearTimeout(pending.timer);
+            const callback = pending[method];
+            pending = null;
+            callback(value);
+        };
+        const close = error => {
+            if (closed) return;
+            closed = true;
+            worker.terminate();
+            if (error) finishPending("reject", error);
+            if (signal) signal.removeEventListener("abort", handleAbort);
+        };
+        const handleAbort = () => close(abortError());
+        worker.onmessage = event => {
+            const message = event.data || {};
+            if (!pending || message.id !== pending.id) return;
+            if (message.ok) finishPending("resolve", message.segments || []);
+            else finishPending("reject", new Error(message.error || t("muxFailed")));
+        };
+        worker.onerror = event => close(new Error(event.message || t("muxFailed")));
+        if (signal) signal.addEventListener("abort", handleAbort, { once: true });
+        return {
+            process(bytes, reset) {
+                if (closed || (signal && signal.aborted)) return Promise.reject(abortError());
+                if (pending) return Promise.reject(new Error(t("muxFailed")));
+                const id = nextRequestId++;
+                return new Promise((resolve, reject) => {
+                    const timer = setTimeout(() => close(new Error(t("segmentMuxTimedOut"))), 60000);
+                    pending = { id, resolve, reject, timer };
+                    worker.postMessage({ type: "transmux", id, reset: Boolean(reset), bytes: bytes.buffer }, [bytes.buffer]);
+                });
+            },
+            close() { close(); }
+        };
+    }
+
     async function transmuxTs(job, playlist, referer, progress = {}) {
         if (typeof muxjs === "undefined" || !muxjs.mp4 || !muxjs.mp4.Transmuxer) throw new Error(t("muxLoadFailed"));
         const chunks = [];
         const keyCache = new Map();
         let initAdded = false;
-        let transmuxer = new muxjs.mp4.Transmuxer({ remux: true });
         let emitted = 0;
         let hasAudio = false;
         let hasVideo = false;
-        const attach = () => transmuxer.on("data", segment => {
-            hasAudio = hasAudio || segment.type === "audio" || segment.type === "combined";
-            hasVideo = hasVideo || segment.type === "video" || segment.type === "combined";
-            if (!initAdded && segment.initSegment && segment.initSegment.byteLength) {
-                chunks.push(new Uint8Array(segment.initSegment));
-                initAdded = true;
+        const session = createTransmuxSession(job.controller.signal);
+        try {
+            for (let index = 0; index < playlist.segments.length; index++) {
+                const item = playlist.segments[index];
+                reportTrackActivity(job, progress, index, playlist.segments.length, "fetchingSegmentLabel");
+                let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
+                if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
+                reportTrackActivity(job, progress, index, playlist.segments.length, "muxingSegmentLabel");
+                const segments = await session.process(bytes, item.discontinuity);
+                for (const segment of segments) {
+                    hasAudio = hasAudio || segment.type === "audio" || segment.type === "combined";
+                    hasVideo = hasVideo || segment.type === "video" || segment.type === "combined";
+                    if (!initAdded && segment.initSegment && segment.initSegment.byteLength) {
+                        chunks.push(new Uint8Array(segment.initSegment));
+                        initAdded = true;
+                    }
+                    if (segment.data && segment.data.byteLength) {
+                        chunks.push(new Uint8Array(segment.data));
+                        emitted++;
+                    }
+                }
+                reportTrackProgress(job, progress, index, playlist.segments.length);
             }
-            if (segment.data && segment.data.byteLength) {
-                chunks.push(new Uint8Array(segment.data));
-                emitted++;
-            }
-        });
-        attach();
-        for (let index = 0; index < playlist.segments.length; index++) {
-            const item = playlist.segments[index];
-            if (item.discontinuity) {
-                transmuxer = new muxjs.mp4.Transmuxer({ remux: true, keepOriginalTimestamps: true });
-                attach();
-            }
-            let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
-            if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
-            transmuxer.push(bytes);
-            transmuxer.flush();
-            reportTrackProgress(job, progress, index, playlist.segments.length);
+        } finally {
+            session.close();
         }
         if (!initAdded || !emitted) throw new Error(t("muxFailed"));
         return { chunks, hasAudio, hasVideo };
@@ -399,6 +489,7 @@
         if (playlist.map) chunks.push(await fetchBytes(playlist.map.url, referer, job.controller.signal, playlist.map.range));
         for (let index = 0; index < playlist.segments.length; index++) {
             const item = playlist.segments[index];
+            reportTrackActivity(job, progress, index, playlist.segments.length, "fetchingSegmentLabel");
             let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
             if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
             chunks.push(bytes);
@@ -419,36 +510,31 @@
         let emitted = 0;
         let hasAudio = false;
         let hasVideo = false;
-        let writeChain = Promise.resolve();
-        let transmuxer;
-        const createTransmuxer = keepOriginalTimestamps => {
-            const next = new muxjs.mp4.Transmuxer({ remux: true, keepOriginalTimestamps });
-            next.on("data", segment => {
-                hasAudio = hasAudio || segment.type === "audio" || segment.type === "combined";
-                hasVideo = hasVideo || segment.type === "video" || segment.type === "combined";
-                if (!initAdded && segment.initSegment && segment.initSegment.byteLength) {
-                    const init = new Uint8Array(segment.initSegment);
-                    writeChain = writeChain.then(() => output.write(init));
-                    initAdded = true;
+        const session = createTransmuxSession(job.controller.signal);
+        try {
+            for (let index = 0; index < playlist.segments.length; index++) {
+                const item = playlist.segments[index];
+                reportTrackActivity(job, progress, index, playlist.segments.length, "fetchingSegmentLabel");
+                let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
+                if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
+                reportTrackActivity(job, progress, index, playlist.segments.length, "muxingSegmentLabel");
+                const segments = await session.process(bytes, item.discontinuity);
+                for (const segment of segments) {
+                    hasAudio = hasAudio || segment.type === "audio" || segment.type === "combined";
+                    hasVideo = hasVideo || segment.type === "video" || segment.type === "combined";
+                    if (!initAdded && segment.initSegment && segment.initSegment.byteLength) {
+                        await output.write(new Uint8Array(segment.initSegment));
+                        initAdded = true;
+                    }
+                    if (segment.data && segment.data.byteLength) {
+                        await output.write(new Uint8Array(segment.data));
+                        emitted++;
+                    }
                 }
-                if (segment.data && segment.data.byteLength) {
-                    const data = new Uint8Array(segment.data);
-                    writeChain = writeChain.then(() => output.write(data));
-                    emitted++;
-                }
-            });
-            return next;
-        };
-        transmuxer = createTransmuxer(false);
-        for (let index = 0; index < playlist.segments.length; index++) {
-            const item = playlist.segments[index];
-            if (item.discontinuity) transmuxer = createTransmuxer(true);
-            let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
-            if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
-            transmuxer.push(bytes);
-            transmuxer.flush();
-            await writeChain;
-            reportTrackProgress(job, progress, index, playlist.segments.length);
+                reportTrackProgress(job, progress, index, playlist.segments.length);
+            }
+        } finally {
+            session.close();
         }
         if (!initAdded || !emitted) throw new Error(t("muxFailed"));
         return { hasAudio, hasVideo };
@@ -463,6 +549,7 @@
         }
         for (let index = 0; index < playlist.segments.length; index++) {
             const item = playlist.segments[index];
+            reportTrackActivity(job, progress, index, playlist.segments.length, "fetchingSegmentLabel");
             let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
             if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
             await output.write(bytes);
@@ -806,6 +893,7 @@
         } finally {
             if (temporaryFile && !downloadOwnsTemporaryFile) await temporaryFile.remove();
             jobs.delete(job.id);
+            if (!jobs.size) popupPanel = "mainMenu";
         }
     }
 
@@ -830,7 +918,12 @@
             return true;
         }
         if (message.Message === "startHlsDownload") {
+            if (jobs.size) {
+                sendResponse({ ok: false, error: t("downloadAlreadyRunning") });
+                return false;
+            }
             const id = "hls-" + Date.now() + "-" + nextJobId++;
+            if (popupPanels.has(message.popupPanel)) popupPanel = message.popupPanel;
             const job = {
                 id,
                 sourceUrl: message.sourceUrl || message.url,
@@ -847,9 +940,26 @@
             runJob(job);
             return false;
         }
+        if (message.Message === "getHlsDownloadJobs") {
+            const cutoff = Date.now() - 60 * 60 * 1000;
+            for (const [sourceUrl, progress] of jobStates) {
+                if (!jobs.has(progress.jobId) && progress.updatedAt < cutoff) jobStates.delete(sourceUrl);
+            }
+            sendResponse({ ok: true, jobs: [...jobStates.values()], panel: jobs.size ? popupPanel : "mainMenu" });
+            return false;
+        }
+        if (message.Message === "setHlsPopupPanel") {
+            if (popupPanels.has(message.panel)) popupPanel = message.panel;
+            sendResponse({ ok: true });
+            return false;
+        }
         if (message.Message === "cancelHlsDownload") {
             const job = jobs.get(message.jobId);
-            if (job) job.controller.abort();
+            if (job) {
+                const progress = job.progress || {};
+                notify(job, "cancelling", progress.completed || 0, progress.total || 0, t("cancellingDownload"));
+                job.controller.abort();
+            }
             sendResponse({ ok: Boolean(job) });
             return false;
         }

@@ -273,8 +273,14 @@
     "message": "Creating full-video download…"
   },
   "separateTrackMemoryWarning": {
-    "message": "This quality has separate video and audio tracks that must be merged in memory. The estimated file size is $1 and peak memory use may be several times larger. Continue?",
-    "placeholders": { "arg1": { "content": "$1" } }
+    "message": "This quality has separate video and audio tracks that must be merged in memory. Estimated file size: $1; estimated peak memory: $2 (at 3×). Continue?",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" } }
+  },
+  "memoryWarningTitle": {
+    "message": "Memory usage warning"
+  },
+  "continueDownload": {
+    "message": "Continue download"
   },
   "downloadFailed": {
     "message": "Download failed: $1",
@@ -489,6 +495,32 @@
   },
   "downloadingLabel": {
     "message": "Downloading and muxing $1$2/$3",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+  },
+  "cancelDownload": {
+    "message": "Cancel"
+  },
+  "downloadAlreadyRunning": {
+    "message": "Another media download is active; wait for it to finish or cancel it first"
+  },
+  "cancellingDownload": {
+    "message": "Cancelling download…"
+  },
+  "segmentRequestTimedOut": {
+    "message": "The media segment request timed out; retry or choose another quality"
+  },
+  "segmentMuxTimedOut": {
+    "message": "Media segment muxing timed out and the task was stopped"
+  },
+  "byteRangeUnsupported": {
+    "message": "The media server ignored the byte-range request; stopped to avoid downloading the entire file repeatedly"
+  },
+  "fetchingSegmentLabel": {
+    "message": "Fetching $1segment $2/$3…",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
+  },
+  "muxingSegmentLabel": {
+    "message": "Muxing $1segment $2/$3…",
     "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" }, "arg3": { "content": "$3" } }
   },
   "videoLabel": {

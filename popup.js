@@ -2,6 +2,8 @@
 
 const MIN_RATE = 0.07;
 const MAX_RATE = 16;
+const MEMORY_MERGE_PEAK_MULTIPLIER = 3;
+const SEPARATE_TRACK_WARNING_BYTES = 512 * 1024 * 1024;
 const t = extensionMessage;
 const ACTIONS = { display: t("actionDisplay"), slower: t("actionSlower"), faster: t("actionFaster"), rewind: t("actionRewind"), advance: t("actionAdvance"), reset: t("actionReset"), fast: t("actionFast") };
 const FIXED = { display: 0, reset: 1 };
@@ -18,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let captureRules = { Ext: [], Type: [] };
   let hlsLoader;
   let statusResetTimer;
+  let currentPopupPanel = "mainMenu";
+  const activeDownloadStates = new Set(["starting", "loading", "downloading", "saving", "cancelling"]);
   const hlsDownloadStates = new Map();
   const hlsQualityOptions = new Map();
   const $ = (selector, root = document) => root.querySelector(selector);
@@ -88,6 +92,58 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + " MB";
     return (bytes / 1024 / 1024 / 1024).toFixed(1) + " GB";
   }
+  function shouldWarnForMemoryMerge(estimatedSize) {
+    const bytes = Number(estimatedSize);
+    return !Number.isFinite(bytes) || bytes <= 0 || bytes > SEPARATE_TRACK_WARNING_BYTES;
+  }
+  function confirmMemoryMerge(message) {
+    return new Promise(resolve => {
+      const overlay = document.createElement("div");
+      overlay.className = "confirm-overlay";
+      const dialog = document.createElement("div");
+      dialog.className = "confirm-dialog";
+      dialog.setAttribute("role", "alertdialog");
+      dialog.setAttribute("aria-modal", "true");
+      const title = document.createElement("strong");
+      title.className = "confirm-title";
+      title.textContent = t("memoryWarningTitle");
+      const body = document.createElement("p");
+      body.className = "confirm-message";
+      body.textContent = message;
+      const actions = document.createElement("div");
+      actions.className = "confirm-actions";
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "confirm-cancel";
+      cancel.textContent = t("cancelDownload");
+      const confirm = document.createElement("button");
+      confirm.type = "button";
+      confirm.className = "confirm-continue";
+      confirm.textContent = t("continueDownload");
+      actions.append(cancel, confirm);
+      dialog.append(title, body, actions);
+      overlay.appendChild(dialog);
+      const finish = accepted => {
+        document.removeEventListener("keydown", handleKeydown, true);
+        overlay.remove();
+        resolve(accepted);
+      };
+      const handleKeydown = event => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          finish(false);
+        }
+      };
+      cancel.addEventListener("click", () => finish(false));
+      confirm.addEventListener("click", () => finish(true));
+      overlay.addEventListener("click", event => {
+        if (event.target === overlay) finish(false);
+      });
+      document.addEventListener("keydown", handleKeydown, true);
+      document.body.appendChild(overlay);
+      confirm.focus();
+    });
+  }
   function captureFormat(item) {
     let format = String(item && item.ext || "").trim().replace(/^\./, "");
     if (!format && item && item.url) {
@@ -109,6 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = String(item && item.url || "");
     return ext === "m3u8" || /(?:^|[.\/])m3u8(?:$|[?#])/i.test(url) || type.includes("mpegurl") || type.includes("m3u8");
   }
+  function hasActiveDownload() {
+    return [...hlsDownloadStates.values()].some(state => state && activeDownloadStates.has(state.state));
+  }
   function renderHlsDownloadPanel(panel, item) {
     panel.textContent = "";
     const statusPanel = $(".capture-download-status-panel", panel.parentElement);
@@ -120,8 +179,18 @@ document.addEventListener("DOMContentLoaded", () => {
       status.className = "capture-download-status" + (state.state === "error" ? " error" : "");
       status.textContent = state.message;
       statusPanel.appendChild(status);
+      if (state.jobId && ["starting", "loading", "downloading"].includes(state.state)) {
+        const cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.className = "capture-download-cancel";
+        cancel.dataset.cancelHls = state.jobId;
+        cancel.textContent = t("cancelDownload");
+        cancel.title = t("cancelDownload");
+        statusPanel.appendChild(cancel);
+      }
     }
     if (!variants || !variants.length) return;
+    const downloadLocked = hasActiveDownload();
     const choices = document.createElement("div");
     choices.className = "capture-quality-list";
     variants.forEach((variant, qualityIndex) => {
@@ -130,24 +199,79 @@ document.addEventListener("DOMContentLoaded", () => {
       button.className = "capture-quality";
       button.dataset.hlsQuality = qualityIndex;
       button.textContent = variant.label;
-      button.title = variant.supported ? t(variant.direct ? "downloadFile" : "downloadQuality") : variant.reason;
-      button.disabled = !variant.supported;
+      button.title = !variant.supported
+        ? variant.reason
+        : (downloadLocked ? t("downloadAlreadyRunning") : t(variant.direct ? "downloadFile" : "downloadQuality"));
+      button.disabled = !variant.supported || downloadLocked;
       choices.appendChild(button);
     });
     panel.appendChild(choices);
   }
-  function refreshHlsDownloadPanels(sourceUrl) {
+  function refreshAllHlsDownloadPanels() {
     document.querySelectorAll(".capture-item").forEach(details => {
-      const index = Number(details.dataset.index);
-      const item = captureItems[index];
-      if (!item || item.url !== sourceUrl) return;
+      const item = captureItems[Number(details.dataset.index)];
       const panel = $(".capture-download-panel", details);
+      if (!item) return;
+      const state = hlsDownloadStates.get(item.url);
+      details.classList.toggle("download-active", Boolean(state && activeDownloadStates.has(state.state)));
       if (panel) renderHlsDownloadPanel(panel, item);
+    });
+    updatePinnedDownloadItem();
+  }
+  function updatePinnedDownloadItem() {
+    const root = $("#captureList");
+    if (!root) return;
+    const previous = $(".capture-download-pin", root);
+    const details = $(".capture-item.download-active", root);
+    const summary = details && $(":scope > summary", details);
+    if (!details || !summary || root.scrollHeight <= root.clientHeight) {
+      if (previous) previous.remove();
+      return;
+    }
+    const rootRect = root.getBoundingClientRect();
+    const summaryRect = summary.getBoundingClientRect();
+    let side = "";
+    if (summaryRect.bottom <= rootRect.top) side = "top";
+    else if (summaryRect.top >= rootRect.bottom) side = "bottom";
+    if (!side) {
+      if (previous) previous.remove();
+      return;
+    }
+    const index = Number(details.dataset.index);
+    const item = captureItems[index];
+    if (!item) {
+      if (previous) previous.remove();
+      return;
+    }
+    if (previous && previous.dataset.index === String(index) && previous.classList.contains(side)) {
+      previous.style.top = Math.max(0, root.scrollTop + (side === "bottom" ? root.clientHeight - previous.offsetHeight : 0)) + "px";
+      return;
+    }
+    if (previous) previous.remove();
+    const pin = document.createElement("button");
+    pin.type = "button";
+    pin.className = "capture-download-pin " + side;
+    pin.dataset.index = index;
+    pin.title = captureFileName(item, index);
+    const label = document.createElement("span");
+    label.className = "capture-download-pin-name";
+    label.textContent = pin.title;
+    const spinner = document.createElement("span");
+    spinner.className = "capture-download-spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    pin.append(label, spinner);
+    root.appendChild(pin);
+    const pinHeight = pin.offsetHeight;
+    pin.style.top = Math.max(0, root.scrollTop + (side === "bottom" ? root.clientHeight - pinHeight : 0)) + "px";
+    pin.addEventListener("click", () => {
+      const targetTop = details.offsetTop - Math.max(0, (root.clientHeight - summary.offsetHeight) / 2);
+      root.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+      details.open = true;
     });
   }
   function setHlsDownloadState(sourceUrl, state, open = false) {
     if (state) hlsDownloadStates.set(sourceUrl, state); else hlsDownloadStates.delete(sourceUrl);
-    refreshHlsDownloadPanels(sourceUrl);
+    refreshAllHlsDownloadPanels();
     if (open) {
       document.querySelectorAll(".capture-item").forEach(details => {
         const item = captureItems[Number(details.dataset.index)];
@@ -159,6 +283,23 @@ document.addEventListener("DOMContentLoaded", () => {
     chrome.runtime.sendMessage(message, response => {
       const error = chrome.runtime.lastError;
       callback(error ? { ok: false, error: error.message } : (response || { ok: false, error: t("noBackgroundResponse") }));
+    });
+  }
+  function restoreHlsDownloadStates() {
+    sendRuntimeMessage({ Message: "getHlsDownloadJobs" }, response => {
+      if (!response.ok || !Array.isArray(response.jobs)) return;
+      response.jobs.forEach(job => {
+        if (!job || !job.sourceUrl) return;
+        hlsDownloadStates.set(job.sourceUrl, {
+          state: job.state,
+          jobId: job.jobId,
+          message: job.message || "",
+          completed: job.completed || 0,
+          total: job.total || 0
+        });
+      });
+      refreshAllHlsDownloadPanels();
+      if (hasActiveDownload() && response.panel && response.panel !== "mainMenu") openPage(response.panel);
     });
   }
   function updateCaptureSummary(visibleCount, query = "") {
@@ -174,7 +315,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = document.createElement("button");
     name.type = "button";
     name.className = "capture-name";
-    name.textContent = captureFileName(item, index);
+    const nameText = document.createElement("span");
+    nameText.className = "capture-name-text";
+    nameText.textContent = captureFileName(item, index);
+    const spinner = document.createElement("span");
+    spinner.className = "capture-download-spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    name.append(nameText, spinner);
     name.title = String(item.url || "");
     const size = document.createElement("span");
     size.className = "capture-size";
@@ -204,6 +351,8 @@ document.addEventListener("DOMContentLoaded", () => {
     detail.appendChild(downloadPanel);
     details.append(summary, detail);
     renderHlsDownloadPanel(downloadPanel, item);
+    const state = hlsDownloadStates.get(item.url);
+    details.classList.toggle("download-active", Boolean(state && activeDownloadStates.has(state.state)));
     return details;
   }
   function disposeCapturePreviews(root) {
@@ -243,6 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fragment.appendChild(details);
     });
     root.appendChild(fragment);
+    updatePinnedDownloadItem();
   }
   function loadHlsLibrary() {
     if (typeof Hls !== "undefined") return Promise.resolve(Hls);
@@ -430,6 +580,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!panel) return;
     $("#mainMenu").classList.add("hidden");
     document.querySelectorAll(".subpage").forEach((page) => page.classList.toggle("hidden", page !== panel));
+    currentPopupPanel = panelId;
+    chrome.runtime.sendMessage({ Message: "setHlsPopupPanel", panel: panelId }, () => void chrome.runtime.lastError);
     $(".content").scrollTop = 0;
     if (panelId === "capturePanel") renderCapture();
     if (panelId === "captureRulesPanel") renderCaptureRules();
@@ -437,6 +589,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function openMainMenu() {
     document.querySelectorAll(".subpage").forEach((page) => page.classList.add("hidden"));
     $("#mainMenu").classList.remove("hidden");
+    currentPopupPanel = "mainMenu";
+    chrome.runtime.sendMessage({ Message: "setHlsPopupPanel", panel: "mainMenu" }, () => void chrome.runtime.lastError);
     $(".content").scrollTop = 0;
     document.querySelectorAll("#captureList audio, #captureList video").forEach((media) => media.pause());
   }
@@ -488,6 +642,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#resetShortcuts").addEventListener("click", () => { const keyBindings = cloneDefaults().keyBindings; settings.keyBindings = keyBindings; renderShortcuts(); save({ keyBindings }, t("shortcutsReset")); });
   $("#resetGeneral").addEventListener("click", () => { const defaults = cloneDefaults(); const patch = { startHidden: defaults.startHidden, rememberSpeed: defaults.rememberSpeed, forceLastSavedSpeed: defaults.forceLastSavedSpeed, audioBoolean: defaults.audioBoolean, controllerOpacity: defaults.controllerOpacity }; settings = { ...settings, ...patch }; renderGeneral(); save(patch, t("playbackReset")); });
   $("#captureFilter").addEventListener("input", renderCaptureList);
+  $("#captureList").addEventListener("scroll", updatePinnedDownloadItem, { passive: true });
   $("#captureSort").addEventListener("click", () => {
     const nextMode = { default: "name", name: "size", size: "default" };
     const labels = { default: t("sortDefault"), name: t("sortName"), size: t("sortSize") };
@@ -497,7 +652,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCaptureList();
   });
   function startHlsDownload(item, playlistUrl, index, audioUrl = "", estimatedSize = 0) {
-    hlsQualityOptions.delete(item.url);
     setHlsDownloadState(item.url, { state: "starting", message: t("creatingFullDownload") }, true);
     sendRuntimeMessage({
       Message: "startHlsDownload",
@@ -506,6 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
       audioUrl,
       estimatedSize,
       allowMemoryMerge: Boolean(audioUrl),
+      popupPanel: currentPopupPanel,
       referer: item.referer || item.initiator || "",
       fileName: captureFileName(item, index)
     }, response => {
@@ -547,7 +702,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setHlsDownloadState(item.url, { state: "choice", message: t("chooseDownload") }, true);
   }
   function startDirectDownload(item, index) {
-    hlsQualityOptions.delete(item.url);
     setHlsDownloadState(item.url, { state: "starting", message: t("creatingDownload") }, true);
     const downloadOptions = {
       url: item.url,
@@ -593,7 +747,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (!copied) throw new Error("copy failed");
   }
-  $("#captureList").addEventListener("click", (event) => {
+  function cancelHlsDownload(event) {
+    const cancelDownload = event.target.closest("[data-cancel-hls]");
+    if (!cancelDownload) return false;
+    event.preventDefault();
+    event.stopPropagation();
+    const details = cancelDownload.closest(".capture-item");
+    const item = details && captureItems[Number(details.dataset.index)];
+    const jobId = cancelDownload.dataset.cancelHls;
+    if (!item || !jobId) return true;
+    const previous = hlsDownloadStates.get(item.url) || {};
+    setHlsDownloadState(item.url, { ...previous, state: "cancelling", message: t("cancellingDownload") }, false);
+    sendRuntimeMessage({ Message: "cancelHlsDownload", jobId }, response => {
+      if (!response.ok) restoreHlsDownloadStates();
+    });
+    return true;
+  }
+  $("#captureList").addEventListener("pointerdown", cancelHlsDownload);
+  $("#captureList").addEventListener("click", async (event) => {
+    if (event.target.closest("[data-cancel-hls]")) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     const copy = event.target.closest(".capture-copy");
     if (copy) {
       event.preventDefault();
@@ -620,7 +796,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (item && variant && variant.supported) {
         if (variant.direct) startDirectDownload(item, index);
         else {
-          if (variant.audioUrl && !window.confirm(t("separateTrackMemoryWarning", captureSize(variant.estimatedSize)))) return;
+          if (variant.audioUrl && shouldWarnForMemoryMerge(variant.estimatedSize)) {
+            const estimatedSize = Number(variant.estimatedSize) || 0;
+            const estimatedPeak = estimatedSize * MEMORY_MERGE_PEAK_MULTIPLIER;
+            const message = t("separateTrackMemoryWarning", [captureSize(estimatedSize), captureSize(estimatedPeak)]);
+            if (!await confirmMemoryMerge(message)) return;
+          }
           startHlsDownload(item, variant.url, index, variant.audioUrl || "", variant.estimatedSize || 0);
         }
       }
@@ -640,10 +821,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const item = captureItems[index];
       if (item && item.url) prepareItemDownload(item, index);
       mountCapturePreview(event.target);
+      requestAnimationFrame(updatePinnedDownloadItem);
       return;
     }
     const preview = $(".capture-preview", event.target);
     if (preview && typeof preview.pause === "function") preview.pause();
+    requestAnimationFrame(updatePinnedDownloadItem);
   }, true);
   $("#captureRulesPanel").addEventListener("click", (event) => {
     const remove = event.target.closest(".rule-remove");
@@ -694,7 +877,7 @@ document.addEventListener("DOMContentLoaded", () => {
   chrome.runtime.onMessage.addListener((message) => {
     if (message && message.Message === "hlsDownloadProgress" && message.sourceUrl) {
       const previous = hlsDownloadStates.get(message.sourceUrl) || {};
-      const next = { ...previous, state: message.state, jobId: message.jobId, message: message.message || "" };
+      const next = { ...previous, state: message.state, jobId: message.jobId, message: message.message || "", completed: message.completed || 0, total: message.total || 0 };
       setHlsDownloadState(message.sourceUrl, next, false);
       if (message.state === "complete") setStatus(message.message || t("completeMp4Started"));
       if (message.state === "error") setStatus(message.message || t("m3u8DownloadFailed"), true);
@@ -715,6 +898,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     renderCaptureList();
   });
+  restoreHlsDownloadStates();
   const normalizeKeyBindings = (bindings) => {
     const defaults = cloneDefaults().keyBindings;
     const normalized = Array.isArray(bindings) && bindings.length ? bindings.map((item) => ({ ...item })) : defaults;
