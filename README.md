@@ -6,6 +6,17 @@
 
 面向 Firefox 的本地扩展，用于控制网页视频和音频的播放速度、快速前进/后退，并检索当前页面加载的媒体资源。
 
+## 预览
+
+<table>
+  <tr>
+    <td width="25%"><img src="screenshots/1.png" alt="播放控制预览图 1"></td>
+    <td width="25%"><img src="screenshots/2.png" alt="播放控制预览图 2"></td>
+    <td width="25%"><img src="screenshots/3.png" alt="播放控制预览图 3"></td>
+    <td width="25%"><img src="screenshots/4.png" alt="播放控制预览图 4"></td>
+  </tr>
+</table>
+
 ## 功能
 
 - 页面内播放控制器，可拖动并自动适应视频边缘。
