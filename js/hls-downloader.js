@@ -276,6 +276,73 @@
         notify(job, "downloading", completed, total, t("downloadingLabel", [label, completed, total]));
     }
 
+    function formatBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes <= 0) return t("unknownSize");
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + " KB";
+        if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(0) + " MB";
+        return (bytes / 1024 / 1024 / 1024).toFixed(1) + " GB";
+    }
+
+    async function ensureTemporaryStorage(estimatedSize) {
+        if (!navigator.storage || typeof navigator.storage.getDirectory !== "function") {
+            throw new Error(t("temporaryStorageUnsupported"));
+        }
+        if (!estimatedSize || typeof navigator.storage.estimate !== "function") return;
+        const estimate = await navigator.storage.estimate();
+        const available = Number(estimate.quota) - Number(estimate.usage);
+        const required = Math.ceil(estimatedSize * 1.25);
+        if (Number.isFinite(available) && available < required) {
+            throw new Error(t("temporaryStorageInsufficient", [formatBytes(required), formatBytes(Math.max(0, available))]));
+        }
+    }
+
+    async function createTemporaryFile(job) {
+        const root = await navigator.storage.getDirectory();
+        const directory = await root.getDirectoryHandle("playback-control-downloads", { create: true });
+        const name = job.id.replace(/[^a-z0-9_-]/gi, "_") + ".mp4.part";
+        try { await directory.removeEntry(name); } catch (_) {}
+        const handle = await directory.getFileHandle(name, { create: true });
+        const writable = await handle.createWritable();
+        let closed = false;
+        return {
+            async write(bytes) {
+                if (closed) throw new Error(t("temporaryFileClosed"));
+                await writable.write(bytes);
+            },
+            async close() {
+                if (closed) return;
+                await writable.close();
+                closed = true;
+            },
+            async abort() {
+                if (closed) return;
+                try { await writable.abort(); } catch (_) {}
+                closed = true;
+            },
+            getFile() { return handle.getFile(); },
+            async remove() {
+                if (!closed) {
+                    try { await writable.abort(); } catch (_) {}
+                    closed = true;
+                }
+                try { await directory.removeEntry(name); } catch (_) {}
+            }
+        };
+    }
+
+    async function cleanupStaleTemporaryFiles() {
+        if (!navigator.storage || typeof navigator.storage.getDirectory !== "function") return;
+        try {
+            const root = await navigator.storage.getDirectory();
+            const directory = await root.getDirectoryHandle("playback-control-downloads");
+            for await (const [name, handle] of directory.entries()) {
+                if (handle.kind === "file" && name.endsWith(".mp4.part")) {
+                    try { await directory.removeEntry(name); } catch (_) {}
+                }
+            }
+        } catch (_) {}
+    }
+
     async function transmuxTs(job, playlist, referer, progress = {}) {
         if (typeof muxjs === "undefined" || !muxjs.mp4 || !muxjs.mp4.Transmuxer) throw new Error(t("muxLoadFailed"));
         const chunks = [];
@@ -343,6 +410,71 @@
 
     function downloadTrack(job, playlist, referer, progress) {
         return playlist.map ? combineFmp4(job, playlist, referer, progress) : transmuxTs(job, playlist, referer, progress);
+    }
+
+    async function transmuxTsToFile(job, playlist, referer, output, progress = {}) {
+        if (typeof muxjs === "undefined" || !muxjs.mp4 || !muxjs.mp4.Transmuxer) throw new Error(t("muxLoadFailed"));
+        const keyCache = new Map();
+        let initAdded = false;
+        let emitted = 0;
+        let hasAudio = false;
+        let hasVideo = false;
+        let writeChain = Promise.resolve();
+        let transmuxer;
+        const createTransmuxer = keepOriginalTimestamps => {
+            const next = new muxjs.mp4.Transmuxer({ remux: true, keepOriginalTimestamps });
+            next.on("data", segment => {
+                hasAudio = hasAudio || segment.type === "audio" || segment.type === "combined";
+                hasVideo = hasVideo || segment.type === "video" || segment.type === "combined";
+                if (!initAdded && segment.initSegment && segment.initSegment.byteLength) {
+                    const init = new Uint8Array(segment.initSegment);
+                    writeChain = writeChain.then(() => output.write(init));
+                    initAdded = true;
+                }
+                if (segment.data && segment.data.byteLength) {
+                    const data = new Uint8Array(segment.data);
+                    writeChain = writeChain.then(() => output.write(data));
+                    emitted++;
+                }
+            });
+            return next;
+        };
+        transmuxer = createTransmuxer(false);
+        for (let index = 0; index < playlist.segments.length; index++) {
+            const item = playlist.segments[index];
+            if (item.discontinuity) transmuxer = createTransmuxer(true);
+            let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
+            if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
+            transmuxer.push(bytes);
+            transmuxer.flush();
+            await writeChain;
+            reportTrackProgress(job, progress, index, playlist.segments.length);
+        }
+        if (!initAdded || !emitted) throw new Error(t("muxFailed"));
+        return { hasAudio, hasVideo };
+    }
+
+    async function combineFmp4ToFile(job, playlist, referer, output, progress = {}) {
+        const keyCache = new Map();
+        let init = new Uint8Array();
+        if (playlist.map) {
+            init = await fetchBytes(playlist.map.url, referer, job.controller.signal, playlist.map.range);
+            await output.write(init);
+        }
+        for (let index = 0; index < playlist.segments.length; index++) {
+            const item = playlist.segments[index];
+            let bytes = await fetchBytes(item.url, referer, job.controller.signal, item.range);
+            if (item.key) bytes = await decryptSegment(bytes, { ...item.key, sequence: item.sequence }, referer, job.controller.signal, keyCache);
+            await output.write(bytes);
+            reportTrackProgress(job, progress, index, playlist.segments.length);
+        }
+        return { hasAudio: containsAscii(init, "soun"), hasVideo: containsAscii(init, "vide") };
+    }
+
+    function downloadTrackToFile(job, playlist, referer, output, progress) {
+        return playlist.map
+            ? combineFmp4ToFile(job, playlist, referer, output, progress)
+            : transmuxTsToFile(job, playlist, referer, output, progress);
     }
 
     function joinChunks(chunks) {
@@ -602,13 +734,14 @@
         return (name || "video") + ".mp4";
     }
 
-    function saveBlob(job, chunks) {
+    function saveDownload(job, blob, cleanup) {
         return new Promise((resolve, reject) => {
-            const blobUrl = URL.createObjectURL(new Blob(chunks, { type: "video/mp4" }));
+            const blobUrl = URL.createObjectURL(blob);
             chrome.downloads.download({ url: blobUrl, filename: mp4FileName(job.fileName), saveAs: false }, downloadId => {
                 const error = chrome.runtime.lastError;
                 if (error || !Number.isInteger(downloadId)) {
                     URL.revokeObjectURL(blobUrl);
+                    Promise.resolve(cleanup && cleanup()).catch(() => {});
                     reject(new Error(error ? error.message : t("browserDownloadFailed")));
                     return;
                 }
@@ -617,18 +750,21 @@
                     if (delta.state && !["complete", "interrupted"].includes(delta.state.current)) return;
                     chrome.downloads.onChanged.removeListener(release);
                     URL.revokeObjectURL(blobUrl);
+                    Promise.resolve(cleanup && cleanup()).catch(() => {});
                 };
                 chrome.downloads.onChanged.addListener(release);
-                setTimeout(() => {
-                    chrome.downloads.onChanged.removeListener(release);
-                    URL.revokeObjectURL(blobUrl);
-                }, 10 * 60 * 1000);
                 resolve(downloadId);
             });
         });
     }
 
+    function saveBlob(job, chunks) {
+        return saveDownload(job, new Blob(chunks, { type: "video/mp4" }));
+    }
+
     async function runJob(job) {
+        let temporaryFile = null;
+        let downloadOwnsTemporaryFile = false;
         try {
             notify(job, "loading", 0, 0, t("readingPlaylist"));
             const resolved = await resolveMediaPlaylist(job.playlistUrl, job.referer, job.controller.signal);
@@ -638,6 +774,7 @@
             let silent = false;
             let total = playlist.segments.length;
             if (audioPlaylistUrl) {
+                if (!job.allowMemoryMerge) throw new Error(t("separateTrackConfirmationRequired"));
                 const audioResolved = await resolveMediaPlaylist(audioPlaylistUrl, job.referer, job.controller.signal);
                 const audioPlaylist = parseMediaPlaylist(audioResolved.text, audioResolved.url);
                 total += audioPlaylist.segments.length;
@@ -647,13 +784,19 @@
                 if (!audioTrack.hasAudio) throw new Error(t("separateNotAac"));
                 notify(job, "saving", total, total, t("mergingTracks"));
                 chunks = [await mergeMp4Tracks(videoTrack.chunks, audioTrack.chunks)];
+                await saveBlob(job, chunks);
             } else {
-                const track = await downloadTrack(job, playlist, job.referer, { offset: 0, total, label: "" });
+                const stats = playlistStats(playlist);
+                await ensureTemporaryStorage(job.estimatedSize || stats.estimatedSize);
+                temporaryFile = await createTemporaryFile(job);
+                const track = await downloadTrackToFile(job, playlist, job.referer, temporaryFile, { offset: 0, total, label: "" });
                 silent = track.hasVideo && !track.hasAudio;
-                notify(job, "saving", total, total, t(silent ? "fixingSilentTimeline" : "generatingMp4"));
-                chunks = [await normalizeMp4Timeline(track.chunks)];
+                notify(job, "saving", total, total, t("preparingDiskDownload"));
+                await temporaryFile.close();
+                const file = await temporaryFile.getFile();
+                await saveDownload(job, file, () => temporaryFile.remove());
+                downloadOwnsTemporaryFile = true;
             }
-            await saveBlob(job, chunks);
             notify(job, "complete", total, total, audioPlaylistUrl
                 ? t("completeWithAudio")
                 : t(silent ? "silentMp4Started" : "completeMp4Started"));
@@ -661,9 +804,12 @@
             const cancelled = error && error.name === "AbortError";
             notify(job, cancelled ? "cancelled" : "error", 0, 0, cancelled ? t("downloadCancelled") : (error.message || t("m3u8DownloadFailed")));
         } finally {
+            if (temporaryFile && !downloadOwnsTemporaryFile) await temporaryFile.remove();
             jobs.delete(job.id);
         }
     }
+
+    cleanupStaleTemporaryFiles();
 
     chrome.webRequest.onBeforeSendHeaders.addListener(data => {
         const entry = requestReferers.get(data.url.split("#")[0]);
@@ -692,6 +838,8 @@
                 audioPlaylistUrl: message.audioUrl || "",
                 referer: message.referer || "",
                 fileName: message.fileName || "video.mp4",
+                estimatedSize: Number(message.estimatedSize) || 0,
+                allowMemoryMerge: message.allowMemoryMerge === true,
                 controller: new AbortController()
             };
             jobs.set(id, job);

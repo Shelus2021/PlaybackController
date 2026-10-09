@@ -12,7 +12,9 @@ G.OptionLists = {
     Ext: MEDIA_RETRIEVAL_DEFAULTS.Ext.map(item => ({ ...item })),
     Type: MEDIA_RETRIEVAL_DEFAULTS.Type.map(item => ({ ...item })),
     enabled: PLAYBACK_DEFAULTS.enabled,
-    siteEnabled: { ...PLAYBACK_DEFAULTS.siteEnabled }
+    siteEnabled: { ...PLAYBACK_DEFAULTS.siteEnabled },
+    mediaRetrievalEnabled: PLAYBACK_DEFAULTS.mediaRetrievalEnabled,
+    mediaRetrievalSiteEnabled: { ...PLAYBACK_DEFAULTS.mediaRetrievalSiteEnabled }
 };
 G.initSyncComplete = false;
 

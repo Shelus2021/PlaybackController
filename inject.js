@@ -26,7 +26,11 @@ var tc = {
   },
 
   // Holds a reference to all of the AUDIO/VIDEO DOM elements we've attached to
-  mediaElements: []
+  mediaElements: [],
+
+  // The media element most recently played or directly interacted with. Keyboard
+  // shortcuts use this instead of changing every media element on the page.
+  activeMedia: null
 };
 
 /* Log levels (depends on caller specifying the correct level)
@@ -229,7 +233,7 @@ function defineVideoController() {
 
     this.video = target;
     this.parent = target.parentElement || parent;
-    storedSpeed = tc.settings.speeds[target.currentSrc];
+    var storedSpeed = tc.settings.speeds[target.currentSrc];
     if (!tc.settings.rememberSpeed) {
       if (!storedSpeed) {
         log(
@@ -250,7 +254,8 @@ function defineVideoController() {
     this.div = this.initializeControls();
 
     var mediaEventAction = function (event) {
-      storedSpeed = tc.settings.speeds[event.target.currentSrc];
+      markActiveMedia(event.target);
+      var storedSpeed = tc.settings.speeds[event.target.currentSrc];
       if (!tc.settings.rememberSpeed) {
         if (!storedSpeed) {
           log("Overwriting stored speed to 1.0 (rememberSpeed not enabled)", 4);
@@ -270,8 +275,10 @@ function defineVideoController() {
       // necessary when rememberSpeed is disabled (this may accidentally
       // override a website's intentional initial speed setting interfering
       // with the site's default behavior)
-      log("Explicitly setting playbackRate to: " + storedSpeed, 4);
-      setSpeed(event.target, storedSpeed);
+      if (Math.abs(event.target.playbackRate - storedSpeed) > 0.001) {
+        log("Explicitly setting playbackRate to: " + storedSpeed, 4);
+        setSpeed(event.target, storedSpeed);
+      }
     };
 
     target.addEventListener(
@@ -279,10 +286,27 @@ function defineVideoController() {
       (this.handlePlay = mediaEventAction.bind(this))
     );
 
-    target.addEventListener(
-      "seeked",
-      (this.handleSeek = mediaEventAction.bind(this))
-    );
+    target.addEventListener("seeked", (this.handleSeek = function (event) {
+      var video = event.target;
+      if (!video.vsc || !video.vsc.pendingSeek) return;
+
+      var pendingSeek = video.vsc.pendingSeek;
+      video.vsc.pendingSeek = null;
+      if (!pendingSeek.resume) return;
+      // Some site players pause in reaction to a programmatic currentTime
+      // change. Restore the state that existed before the extension sought.
+      setTimeout(function () {
+        if (!video.isConnected || !video.vsc || video.ended || !video.paused) return;
+        var playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(function () {});
+        }
+      }, 0);
+    }));
+
+    target.addEventListener("mousedown", (this.handleActivate = function () {
+      markActiveMedia(target);
+    }), true);
 
     var observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -309,7 +333,9 @@ function defineVideoController() {
   tc.videoController.prototype.remove = function () {
     this.div.remove();
     this.video.removeEventListener("play", this.handlePlay);
-    this.video.removeEventListener("seek", this.handleSeek);
+    this.video.removeEventListener("seeked", this.handleSeek);
+    this.video.removeEventListener("mousedown", this.handleActivate, true);
+    if (tc.activeMedia === this.video) tc.activeMedia = null;
     delete this.video.vsc;
     let idx = tc.mediaElements.indexOf(this.video);
     if (idx != -1) {
@@ -466,7 +492,7 @@ function setupListener() {
       log("Speed setting saved: " + speed, 5);
     });
     // show the controller for 1000ms if it's hidden.
-    runAction("blink", null, null);
+    runAction("blink", null, null, video);
   }
 
   document.addEventListener(
@@ -622,7 +648,9 @@ function initializeNow(document) {
 
         var item = tc.settings.keyBindings.find((item) => item.key === keyCode);
         if (item) {
-          runAction(item.action, item.value);
+          var activeMedia = getActiveMedia(event.currentTarget);
+          if (!activeMedia) return false;
+          runAction(item.action, item.value, null, activeMedia);
           if (item.force === true || item.force === "true") {
             // disable websites key bindings
             event.preventDefault();
@@ -749,10 +777,80 @@ function setSpeed(video, speed) {
   log("setSpeed finished: " + speed, 5);
 }
 
-function runAction(action, value, e) {
+function markActiveMedia(media) {
+  if (!media || !media.vsc) return;
+  tc.activeMedia = media;
+  media.vsc.lastActivatedAt = performance.now();
+}
+
+function getActiveMedia(doc) {
+  var mediaTags = tc.mediaElements.filter(function (media) {
+    return media &&
+      media.isConnected &&
+      media.vsc &&
+      media.ownerDocument === doc &&
+      !media.classList.contains("vsc-cancelled");
+  });
+  if (!mediaTags.length) return null;
+
+  var playing = mediaTags.filter(function (media) {
+    return !media.paused && !media.ended;
+  });
+
+  if (tc.activeMedia && mediaTags.includes(tc.activeMedia)) {
+    if (!tc.activeMedia.paused || !playing.length) return tc.activeMedia;
+  }
+
+  if (playing.length) {
+    return playing.reduce(function (latest, media) {
+      return (media.vsc.lastActivatedAt || 0) > (latest.vsc.lastActivatedAt || 0)
+        ? media
+        : latest;
+    });
+  }
+
+  // On pages where no video has played yet, prefer the largest visible media.
+  return mediaTags.reduce(function (best, media) {
+    var rect = media.getBoundingClientRect();
+    var area = rect.width > 0 && rect.height > 0 ? rect.width * rect.height : 0;
+    var bestRect = best.getBoundingClientRect();
+    var bestArea = bestRect.width > 0 && bestRect.height > 0
+      ? bestRect.width * bestRect.height
+      : 0;
+    return area > bestArea ? media : best;
+  });
+}
+
+function seekMedia(video, offset) {
+  var pendingSeek = {
+    resume: !video.paused && !video.ended
+  };
+  video.vsc.pendingSeek = pendingSeek;
+  video.currentTime += offset;
+
+  // A media element can complete a seek synchronously (for example, in a fully
+  // buffered short clip). Preserve playback in that case as well.
+  if (pendingSeek.resume && !video.seeking && video.paused && !video.ended) {
+    video.vsc.pendingSeek = null;
+    var playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch(function () {});
+    }
+  }
+
+  // Do not let a seek that produced no seeked event affect a later, unrelated
+  // seek performed by the page or by the user.
+  setTimeout(function () {
+    if (video.vsc && video.vsc.pendingSeek === pendingSeek) {
+      video.vsc.pendingSeek = null;
+    }
+  }, 2000);
+}
+
+function runAction(action, value, e, targetMedia) {
   log("runAction Begin", 5);
 
-  var mediaTags = tc.mediaElements;
+  var mediaTags = targetMedia ? [targetMedia] : tc.mediaElements;
 
   // Get the controller that was used if called from a button press event e
   if (e) {
@@ -767,15 +865,17 @@ function runAction(action, value, e) {
       return;
     }
 
+    if (e) markActiveMedia(v);
+
     showController(controller);
 
     if (!v.classList.contains("vsc-cancelled")) {
       if (action === "rewind") {
         log("Rewind", 5);
-        v.currentTime -= value;
+        seekMedia(v, -value);
       } else if (action === "advance") {
         log("Fast forward", 5);
-        v.currentTime += value;
+        seekMedia(v, value);
       } else if (action === "faster") {
         log("Increase speed", 5);
         // Maximum playback speed in Chrome is set to 16:

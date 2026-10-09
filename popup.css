@@ -34,6 +34,14 @@ input[type="text"], input[type="number"] { caret-color: auto; }
 .slider:before { content: ""; display: block; width: 18px; height: 18px; margin: 2px; border-radius: 50%; background: white; box-shadow: 0 1px 3px #777; transition: .15s; }
 .switch input:checked + .slider { background: #2864d7; }
 .switch input:checked + .slider:before { transform: translateX(16px); }
+.capture-header { grid-template-columns: auto minmax(0, 1fr) auto; }
+.capture-switch { display: flex; align-items: center; margin-right: 5px; cursor: pointer; user-select: none; }
+.capture-switch input { display: none; }
+.capture-slider { display: block; width: 28px; height: 16px; border: 1px solid #9ca7a0; border-radius: 9px; background: #fff; transition: .15s; }
+.capture-slider:before { content: ""; display: block; width: 10px; height: 10px; margin: 2px; border-radius: 50%; background: #7b8680; transition: .15s; }
+.capture-switch input:checked + .capture-slider { border-color: #18864b; background: #dff4e8; }
+.capture-switch input:checked + .capture-slider:before { background: #18864b; transform: translateX(12px); }
+.capture-switch.disabled { opacity: .48; cursor: not-allowed; }
 .hint { margin: 0 0 10px; color: #777; font-size: 11px; line-height: 1.4; }
 .capture-filter-row { display: grid; grid-template-columns: minmax(0, 1fr) 52px; gap: 6px; margin-top: 10px; }
 .capture-filter { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid #c7cbd1; border-radius: 5px; background: #fff; font: inherit; }

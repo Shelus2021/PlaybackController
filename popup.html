@@ -36,7 +36,7 @@
         <button type="button" id="saveGeneral" class="primary" data-i18n="savePlaybackSettings">保存播放设置</button><button type="button" id="resetGeneral" class="reset-button" data-i18n="resetPlaybackSettings">恢复默认播放设置</button>
       </section>
       <section id="capturePanel" class="subpage hidden">
-        <div class="subpage-header"><button type="button" class="back-button" data-back="" data-i18n="back">返回</button><span><b data-i18n="mediaCaptureTitle">媒体检索</b><small id="captureCardSummary" data-i18n="loadingCaptureData">正在读取检索数据…</small></span></div>
+        <div class="subpage-header capture-header"><button type="button" class="back-button" data-back="" data-i18n="back">返回</button><span><b data-i18n="mediaCaptureTitle">媒体检索</b><small id="captureCardSummary" data-i18n="loadingCaptureData">正在读取检索数据…</small></span><label class="capture-switch" title="启用或停止当前网站的媒体检索" data-i18n-title="toggleMediaCapture"><input id="captureEnabled" type="checkbox" /><span class="capture-slider"></span></label></div>
         <div class="capture-filter-row">
           <input id="captureFilter" class="capture-filter" type="text" placeholder="筛选名称、类型或网址" data-i18n-placeholder="filterMedia" />
           <button type="button" id="captureSort" class="capture-sort" title="当前按默认顺序排列" data-i18n="sortDefault" data-i18n-title="sortDefaultTitle">默认</button>

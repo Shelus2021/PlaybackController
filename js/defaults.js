@@ -8,6 +8,8 @@ var PLAYBACK_DEFAULTS = {
   audioBoolean: true,
   controllerOpacity: 0.5,
   siteEnabled: {},
+  mediaRetrievalEnabled: false,
+  mediaRetrievalSiteEnabled: {},
   keyBindings: [
     { action: "display", key: 72, value: 0, force: false, predefined: true },
     { action: "slower", key: 83, value: 0.1, force: false, predefined: true },

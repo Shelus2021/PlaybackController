@@ -17,6 +17,12 @@
   "toggleCurrentSite": {
     "message": "Enable or disable on the current website"
   },
+  "toggleMediaCapture": {
+    "message": "Start or stop media discovery on the current website"
+  },
+  "mediaCaptureRequiresPlayback": {
+    "message": "Enable the current website first"
+  },
   "shortcutsTitle": {
     "message": "Shortcuts"
   },
@@ -168,6 +174,10 @@
     "message": "Current website: $1",
     "placeholders": { "arg1": { "content": "$1" } }
   },
+  "mediaCaptureStatus": {
+    "message": "Media finder $1",
+    "placeholders": { "arg1": { "content": "$1" } }
+  },
   "captureStopped": {
     "message": "Media finder stopped"
   },
@@ -234,9 +244,6 @@
     "message": "Save failed: $1",
     "placeholders": { "arg1": { "content": "$1" } }
   },
-  "reloadingPage": {
-    "message": "Reloading the current page…"
-  },
   "playbackSaved": {
     "message": "Playback settings saved"
   },
@@ -264,6 +271,10 @@
   },
   "creatingFullDownload": {
     "message": "Creating full-video download…"
+  },
+  "separateTrackMemoryWarning": {
+    "message": "This quality has separate video and audio tracks that must be merged in memory. The estimated file size is $1 and peak memory use may be several times larger. Continue?",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "downloadFailed": {
     "message": "Download failed: $1",
@@ -494,6 +505,22 @@
   },
   "mergingTracks": {
     "message": "Losslessly merging video and audio tracks…"
+  },
+  "separateTrackConfirmationRequired": {
+    "message": "Separate video and audio tracks were detected; confirm the memory warning before downloading"
+  },
+  "temporaryStorageUnsupported": {
+    "message": "This Firefox version does not provide extension temporary-file storage, so low-memory downloading is unavailable"
+  },
+  "temporaryStorageInsufficient": {
+    "message": "Not enough temporary storage: approximately $1 required, $2 available",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" } }
+  },
+  "temporaryFileClosed": {
+    "message": "The temporary download file is already closed"
+  },
+  "preparingDiskDownload": {
+    "message": "Creating the browser download from the temporary file…"
   },
   "fixingSilentTimeline": {
     "message": "Correcting the video-only timeline (no audio)…"

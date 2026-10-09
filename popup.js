@@ -21,9 +21,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const hlsDownloadStates = new Map();
   const hlsQualityOptions = new Map();
   const $ = (selector, root = document) => root.querySelector(selector);
-  const cloneDefaults = () => ({ ...DEFAULTS, siteEnabled: { ...(DEFAULTS.siteEnabled || {}) }, keyBindings: DEFAULTS.keyBindings.map((item) => ({ ...item })) });
+  const cloneDefaults = () => ({ ...DEFAULTS, siteEnabled: { ...(DEFAULTS.siteEnabled || {}) }, mediaRetrievalSiteEnabled: { ...(DEFAULTS.mediaRetrievalSiteEnabled || {}) }, keyBindings: DEFAULTS.keyBindings.map((item) => ({ ...item })) });
   const keyName = (code) => ({ 32: "Space", 37: "Left", 38: "Up", 39: "Right", 40: "Down" }[code] || (code ? String.fromCharCode(code) : ""));
   const siteIsEnabled = () => currentHost && Object.prototype.hasOwnProperty.call(settings.siteEnabled || {}, currentHost) ? Boolean(settings.siteEnabled[currentHost]) : Boolean(settings.enabled);
+  const captureIsEnabled = () => {
+    if (!siteIsEnabled()) return false;
+    return currentHost && Object.prototype.hasOwnProperty.call(settings.mediaRetrievalSiteEnabled || {}, currentHost)
+      ? Boolean(settings.mediaRetrievalSiteEnabled[currentHost])
+      : Boolean(settings.mediaRetrievalEnabled);
+  };
   const enabledLabel = (enabled) => t(enabled ? "statusEnabled" : "statusDisabled");
   const setStatus = (message, error = false, persistent = false) => {
     clearTimeout(statusResetTimer);
@@ -36,11 +42,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderGeneral() {
     $("#enabled").checked = siteIsEnabled();
+    renderCaptureToggle();
     ["startHidden", "rememberSpeed", "forceLastSavedSpeed", "audioBoolean"].forEach((id) => { $("#" + id).checked = Boolean(settings[id]); });
     const opacity = Number(settings.controllerOpacity); $("#controllerOpacity").value = Number.isFinite(opacity) && opacity >= 0 && opacity <= 1 ? opacity : 0.5;
   }
+  function renderCaptureToggle() {
+    const toggle = $("#captureEnabled");
+    const playbackEnabled = siteIsEnabled();
+    toggle.checked = playbackEnabled && captureIsEnabled();
+    toggle.disabled = !playbackEnabled;
+    const label = toggle.closest("label");
+    label.classList.toggle("disabled", !playbackEnabled);
+    label.title = t(playbackEnabled ? "toggleMediaCapture" : "mediaCaptureRequiresPlayback");
+  }
   function renderCapture() {
-    if (!siteIsEnabled()) {
+    renderCaptureToggle();
+    if (!captureIsEnabled()) {
       captureItems = [];
       renderCaptureList();
       $("#captureCardSummary").textContent = t("captureStopped");
@@ -390,9 +407,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   function applyPlaybackStateToCapture(enabled) {
+    renderCaptureToggle();
     if (enabled) {
-      $("#captureCardSummary").textContent = t("reloadingPage");
-      if (currentTabId >= 0) chrome.tabs.reload(currentTabId);
+      renderCapture();
       return;
     }
     captureItems = [];
@@ -439,9 +456,32 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   $("#enabled").addEventListener("change", () => {
     const enabled = $("#enabled").checked;
-    if (!currentHost) return save({ enabled }, enabledLabel(enabled), () => applyPlaybackStateToCapture(enabled));
+    if (!currentHost) {
+      const patch = enabled ? { enabled } : { enabled, mediaRetrievalEnabled: false };
+      return save(patch, enabledLabel(enabled), () => applyPlaybackStateToCapture(enabled));
+    }
     const siteEnabled = { ...(settings.siteEnabled || {}), [currentHost]: enabled };
-    save({ siteEnabled }, t("currentSiteStatus", enabledLabel(enabled)), () => applyPlaybackStateToCapture(enabled));
+    const patch = { siteEnabled };
+    if (!enabled) {
+      patch.mediaRetrievalSiteEnabled = { ...(settings.mediaRetrievalSiteEnabled || {}), [currentHost]: false };
+    }
+    save(patch, t("currentSiteStatus", enabledLabel(enabled)), () => applyPlaybackStateToCapture(enabled));
+  });
+  $("#captureEnabled").addEventListener("change", () => {
+    if (!siteIsEnabled()) {
+      renderCaptureToggle();
+      return;
+    }
+    const enabled = $("#captureEnabled").checked;
+    const complete = () => {
+      renderCapture();
+      if (!enabled && currentTabId >= 0) {
+        chrome.runtime.sendMessage({ Message: "clearData", type: true, tabId: currentTabId }, () => void chrome.runtime.lastError);
+      }
+    };
+    if (!currentHost) return save({ mediaRetrievalEnabled: enabled }, t("mediaCaptureStatus", enabledLabel(enabled)), complete);
+    const mediaRetrievalSiteEnabled = { ...(settings.mediaRetrievalSiteEnabled || {}), [currentHost]: enabled };
+    save({ mediaRetrievalSiteEnabled }, t("mediaCaptureStatus", enabledLabel(enabled)), complete);
   });
   $("#saveGeneral").addEventListener("click", () => { const opacity = Number($("#controllerOpacity").value); if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) return setStatus(t("opacityError"), true); save({ startHidden: $("#startHidden").checked, rememberSpeed: $("#rememberSpeed").checked, forceLastSavedSpeed: $("#forceLastSavedSpeed").checked, audioBoolean: $("#audioBoolean").checked, controllerOpacity: opacity }, t("playbackSaved")); });
   $("#saveShortcuts").addEventListener("click", () => { try { save({ keyBindings: readShortcuts() }, t("shortcutsSaved")); } catch (error) { setStatus(error.message, true); } });
@@ -456,7 +496,7 @@ document.addEventListener("DOMContentLoaded", () => {
     $("#captureSort").title = t("sortTitle", labels[captureSortMode]);
     renderCaptureList();
   });
-  function startHlsDownload(item, playlistUrl, index, audioUrl = "") {
+  function startHlsDownload(item, playlistUrl, index, audioUrl = "", estimatedSize = 0) {
     hlsQualityOptions.delete(item.url);
     setHlsDownloadState(item.url, { state: "starting", message: t("creatingFullDownload") }, true);
     sendRuntimeMessage({
@@ -464,6 +504,8 @@ document.addEventListener("DOMContentLoaded", () => {
       sourceUrl: item.url,
       url: playlistUrl,
       audioUrl,
+      estimatedSize,
+      allowMemoryMerge: Boolean(audioUrl),
       referer: item.referer || item.initiator || "",
       fileName: captureFileName(item, index)
     }, response => {
@@ -577,7 +619,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const variant = variants && variants[Number(quality.dataset.hlsQuality)];
       if (item && variant && variant.supported) {
         if (variant.direct) startDirectDownload(item, index);
-        else startHlsDownload(item, variant.url, index, variant.audioUrl || "");
+        else {
+          if (variant.audioUrl && !window.confirm(t("separateTrackMemoryWarning", captureSize(variant.estimatedSize)))) return;
+          startHlsDownload(item, variant.url, index, variant.audioUrl || "", variant.estimatedSize || 0);
+        }
       }
       return;
     }
@@ -655,7 +700,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (message.state === "error") setStatus(message.message || t("m3u8DownloadFailed"), true);
       return;
     }
-    if (!message || message.tabId !== currentTabId || !message.url || !siteIsEnabled()) return;
+    if (!message || message.tabId !== currentTabId || !message.url || !captureIsEnabled()) return;
     if (captureItems.some((item) => item.url === message.url)) return;
     const index = captureItems.length;
     captureItems.push(message);

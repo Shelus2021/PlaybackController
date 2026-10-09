@@ -297,10 +297,14 @@ function SetIcon(obj) {
 function mediaRetrievalEnabled(url) {
     let host = "";
     try { host = new URL(url).hostname; } catch (e) { host = ""; }
-    if (host && G.siteEnabled && Object.prototype.hasOwnProperty.call(G.siteEnabled, host)) {
-        return Boolean(G.siteEnabled[host]);
+    const playbackEnabled = host && G.siteEnabled && Object.prototype.hasOwnProperty.call(G.siteEnabled, host)
+        ? Boolean(G.siteEnabled[host])
+        : G.enabled !== false;
+    if (!playbackEnabled) { return false; }
+    if (host && G.mediaRetrievalSiteEnabled && Object.prototype.hasOwnProperty.call(G.mediaRetrievalSiteEnabled, host)) {
+        return Boolean(G.mediaRetrievalSiteEnabled[host]);
     }
-    return G.enabled !== false;
+    return G.mediaRetrievalEnabled === true;
 }
 
 // 判断特殊页面

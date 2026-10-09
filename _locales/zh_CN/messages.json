@@ -17,6 +17,12 @@
   "toggleCurrentSite": {
     "message": "启用或禁用当前网站"
   },
+  "toggleMediaCapture": {
+    "message": "启用或停止当前网站的媒体检索"
+  },
+  "mediaCaptureRequiresPlayback": {
+    "message": "请先启用当前网站"
+  },
   "shortcutsTitle": {
     "message": "快捷键"
   },
@@ -168,6 +174,10 @@
     "message": "当前网站：$1",
     "placeholders": { "arg1": { "content": "$1" } }
   },
+  "mediaCaptureStatus": {
+    "message": "媒体检索$1",
+    "placeholders": { "arg1": { "content": "$1" } }
+  },
   "captureStopped": {
     "message": "媒体检索已停止"
   },
@@ -234,9 +244,6 @@
     "message": "保存失败：$1",
     "placeholders": { "arg1": { "content": "$1" } }
   },
-  "reloadingPage": {
-    "message": "正在重新加载当前页面…"
-  },
   "playbackSaved": {
     "message": "播放设置已保存"
   },
@@ -264,6 +271,10 @@
   },
   "creatingFullDownload": {
     "message": "正在创建完整视频下载任务…"
+  },
+  "separateTrackMemoryWarning": {
+    "message": "该画质的视频与音频需要在内存中合并，预计文件大小为 $1，峰值内存可能达到文件大小的数倍。是否继续？",
+    "placeholders": { "arg1": { "content": "$1" } }
   },
   "downloadFailed": {
     "message": "下载失败：$1",
@@ -494,6 +505,22 @@
   },
   "mergingTracks": {
     "message": "正在无损合并视频和音频轨道…"
+  },
+  "separateTrackConfirmationRequired": {
+    "message": "检测到独立音视频轨道，需要确认内存风险后才能下载"
+  },
+  "temporaryStorageUnsupported": {
+    "message": "当前 Firefox 不支持扩展临时文件存储，无法进行低内存下载"
+  },
+  "temporaryStorageInsufficient": {
+    "message": "临时存储空间不足：预计需要 $1，当前可用 $2",
+    "placeholders": { "arg1": { "content": "$1" }, "arg2": { "content": "$2" } }
+  },
+  "temporaryFileClosed": {
+    "message": "临时下载文件已关闭"
+  },
+  "preparingDiskDownload": {
+    "message": "正在从临时文件创建浏览器下载…"
   },
   "fixingSilentTimeline": {
     "message": "正在校正纯视频时间轴（不包含声音）…"
